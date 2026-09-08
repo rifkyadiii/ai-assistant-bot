@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#09090b" stroke="#27272a" stroke-width="2"/>
+  <circle cx="32" cy="32" r="22" stroke="#6366f1" stroke-width="2" opacity="0.4"/>
+  <circle cx="32" cy="32" r="16" stroke="#0ea5e9" stroke-width="2" opacity="0.6"/>
+  <circle cx="32" cy="32" r="10" fill="#0ea5e9"/>
+  <!-- Microphone / Wave glyph -->
+  <rect x="28" y="24" width="8" height="14" rx="4" fill="#ffffff"/>
+  <path d="M24 31C24 35.4 27.6 39 32 39C36.4 39 40 35.4 40 31" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M32 39V44M27 44H37" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+</svg>

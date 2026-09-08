@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VoiceBot OS
+GenericName=Voice Control Center
+Comment=Multimodal voice and gesture desktop control
+Exec="/home/arch/Documents/Sodexo Internship/Test2/desktop/start_linux.sh"
+Icon=/home/arch/Documents/Sodexo Internship/Test2/static/icons/icon-192.png
+Terminal=false
+Categories=Utility;AudioVideo;
+Keywords=voice;assistant;gesture;control
+StartupNotify=true
