@@ -46,6 +46,7 @@ TTS_ENGINE: Final[str] = os.getenv("TTS_ENGINE", "edge-tts")
 TTS_VOICE: Final[str] = os.getenv("TTS_VOICE", "en-US-JennyNeural")
 TTS_RATE: Final[str] = os.getenv("TTS_RATE", "+0%")
 TTS_VOLUME: Final[str] = os.getenv("TTS_VOLUME", "+0%")
+TTS_ENABLED: Final[bool] = os.getenv("TTS_ENABLED", "true").lower() in ("true", "1", "yes")
 
 # Desktop Control Settings
 DESKTOP_CONTROL_ENABLED: Final[bool] = os.getenv("DESKTOP_CONTROL_ENABLED", "true").lower() in ("true", "1", "yes")
@@ -53,6 +54,10 @@ DESKTOP_CONTROL_ENABLED: Final[bool] = os.getenv("DESKTOP_CONTROL_ENABLED", "tru
 # Web Server Settings
 SERVER_HOST: Final[str] = os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT: Final[int] = int(os.getenv("SERVER_PORT", "5000"))
+
+# Frontend Polling Intervals (milliseconds)
+STATUS_POLL_INTERVAL: Final[int] = int(os.getenv("STATUS_POLL_INTERVAL", "2500"))
+LOGS_POLL_INTERVAL: Final[int] = int(os.getenv("LOGS_POLL_INTERVAL", "3000"))
 
 # Voice Commands Mapping
 COMMANDS: Final[dict[str, list[str]]] = {

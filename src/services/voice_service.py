@@ -126,9 +126,11 @@ class VoiceService:
 
         activity_logger.log(f"Voice command: \"{raw}\"", category="VOICE")
 
-        # 1. Volume Set by Number (e.g. "volume 50", "set volume to 80%", "turn volume to 30")
+        # 1. Volume Set by Number (e.g. "volume 50", "set volume to 80%", "volume up to 80", "increase volume to 70 percent")
         vol_set_match = re.search(
-            r"(?:set\s+)?volume\s+(?:to\s+|at\s+)?(\d{1,3})\s*(?:%|percent)?", cleaned
+            r"(?:set\s+|increase\s+|decrease\s+|raise\s+|lower\s+|turn\s+)?"
+            r"volume\s+(?:up\s+|down\s+)?(?:to\s+|at\s+)?(\d{1,3})\s*(?:%|percent)?",
+            cleaned,
         )
         if vol_set_match:
             val = int(vol_set_match.group(1))
@@ -147,9 +149,11 @@ class VoiceService:
             self._notify_listeners(res)
             return res
 
-        # 2. Brightness Set by Number (e.g. "brightness 70", "set brightness to 90%")
+        # 2. Brightness Set by Number (e.g. "brightness 70", "set brightness to 90%", "brightness up to 80")
         bri_set_match = re.search(
-            r"(?:set\s+)?brightness\s+(?:to\s+|at\s+)?(\d{1,3})\s*(?:%|percent)?", cleaned
+            r"(?:set\s+|increase\s+|decrease\s+|raise\s+|lower\s+|turn\s+)?"
+            r"brightness\s+(?:up\s+|down\s+)?(?:to\s+|at\s+)?(\d{1,3})\s*(?:%|percent)?",
+            cleaned,
         )
         if bri_set_match:
             val = int(bri_set_match.group(1))

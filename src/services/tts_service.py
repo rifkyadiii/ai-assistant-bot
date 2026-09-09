@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import asyncio
 import platform
+import shutil
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -26,6 +28,8 @@ class TTSService:
         self._rate = rate
         self._volume = volume
         self._edge_available = self._check_edge_tts()
+        self._current_process: Optional[subprocess.Popen] = None
+        self._play_lock = threading.Lock()
 
     def _check_edge_tts(self) -> bool:
         """Check if edge-tts is installed and usable."""
@@ -49,25 +53,43 @@ class TTSService:
         system = platform.system()
         try:
             if system == "Windows":
-                subprocess.Popen(
+                proc = subprocess.Popen(
                     ["powershell", "-Command",
                      f"(New-Object Media.SoundPlayer '{audio_path}').PlaySync()"],
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
+                with self._play_lock:
+                    self._current_process = proc
+                proc.wait()
                 return True
             elif system == "Darwin":
-                subprocess.Popen(["afplay", str(audio_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                proc = subprocess.Popen(["afplay", str(audio_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                with self._play_lock:
+                    self._current_process = proc
+                proc.wait()
                 return True
             else:
-                # Linux — try a play command
                 for player in ["aplay", "paplay", "ffplay", "mpv"]:
                     if self._has_shutil(player):
-                        subprocess.Popen([player, str(audio_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        proc = subprocess.Popen([player, str(audio_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        with self._play_lock:
+                            self._current_process = proc
+                        proc.wait()
                         return True
             return False
         except Exception as exc:
             activity_logger.log(f"Audio playback error: {exc}", category="VOICE", level="WARNING")
             return False
+
+    def stop(self) -> None:
+        """Stop any in-progress TTS playback."""
+        with self._play_lock:
+            if self._current_process and self._current_process.poll() is None:
+                try:
+                    self._current_process.terminate()
+                except Exception:
+                    pass
+            self._current_process = None
 
     def _has_shutil(self, binary: str) -> bool:
         import shutil
@@ -107,6 +129,32 @@ class TTSService:
         if self.speak_edge(text):
             return True
         return self._speak_system(text)
+
+    def generate_audio(self, text: str) -> Optional[Path]:
+        """Generate speech audio via edge-tts and return the file path.
+
+        Returns the path to a temporary MP3 file, or None on failure.
+        The caller is responsible for cleaning up the file.
+        """
+        if not text or not self._edge_available:
+            return None
+        try:
+            import edge_tts
+            temp_dir = Path(tempfile.gettempdir())
+            audio_path = temp_dir / f"voicebot_tts_{abs(hash(text)) % 100000}.mp3"
+
+            asyncio.run(
+                edge_tts.Communicate(
+                    text=text,
+                    voice=self._voice,
+                    rate=self._rate,
+                    volume=self._volume,
+                ).save(str(audio_path))
+            )
+            return audio_path if audio_path.exists() else None
+        except Exception as exc:
+            activity_logger.log(f"edge-tts generation error: {exc}", category="VOICE", level="WARNING")
+            return None
 
     def _speak_system(self, text: str) -> bool:
         """Fallback to system TTS via command-line utilities."""

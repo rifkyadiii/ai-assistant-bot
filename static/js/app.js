@@ -26,7 +26,9 @@ const state = {
   cameraExpanded: true,
   controlBarOpen: false,
   wakeWordEnabled: false,
-  wakeWordListening: false
+  wakeWordListening: false,
+  config: null,
+  wakeWordSupported: true
 };
 
 // ==========================================
@@ -386,6 +388,7 @@ function renderCameraPanel() {
   if (!container) return;
 
   container.classList.toggle('collapsed', !state.cameraExpanded);
+  savePanelState();
 
   if (icon) {
     if (state.cameraExpanded) {
@@ -536,10 +539,36 @@ function toggleChatPanel() {
   renderChatPanelState();
 }
 
+const PANEL_STORAGE_KEY = 'voicebot_panels_v1';
+
+function savePanelState() {
+  try {
+    localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify({
+      cameraExpanded: state.cameraExpanded,
+      chatExpanded: state.chatExpanded
+    }));
+  } catch (e) {
+    console.warn('[Panels] Failed to persist panel state:', e);
+  }
+}
+
+function loadPanelState() {
+  try {
+    const raw = localStorage.getItem(PANEL_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.cameraExpanded === 'boolean') state.cameraExpanded = parsed.cameraExpanded;
+    if (typeof parsed.chatExpanded === 'boolean') state.chatExpanded = parsed.chatExpanded;
+  } catch (e) {
+    console.warn('[Panels] Failed to load panel state:', e);
+  }
+}
+
 function renderChatPanelState() {
   const panel = document.getElementById('chatPanel');
   if (panel) panel.classList.toggle('collapsed', !state.chatExpanded);
   updateChatUnreadBadge();
+  savePanelState();
 }
 
 function expandChatInput() {
@@ -666,12 +695,18 @@ function startWakeWordFromUserGesture() {
   return ok;
 }
 
+function getWakePhrase() {
+  if (state.config && state.config.wake_phrase) return String(state.config.wake_phrase).toLowerCase();
+  return WAKE_PHRASE;
+}
+
 function handleWakeWordTranscript(transcript) {
   // Check if the transcript contains the wake phrase
-  if (!transcript.includes(WAKE_PHRASE)) return;
+  const phrase = getWakePhrase();
+  if (!transcript.includes(phrase)) return;
 
   // Extract command after wake phrase
-  const rest = transcript.split(WAKE_PHRASE).pop().trim();
+  const rest = transcript.split(phrase).pop().trim();
 
   // Signal wake word detected
   state.wakeWordEnabled = true;
@@ -719,6 +754,7 @@ function stopWakeWord() {
 function renderWakeWordUI() {
   const toggle = document.getElementById('wakeWordToggle');
   const status = document.getElementById('wakeWordStatus');
+  const dot = document.getElementById('wakeWordStatusDot');
   const pill = document.getElementById('wakePill');
 
   if (toggle) {
@@ -729,6 +765,11 @@ function renderWakeWordUI() {
     status.textContent = state.wakeWordEnabled ? 'ON' : 'OFF';
     status.className = 'text-[11px] font-semibold ' + (state.wakeWordEnabled ? 'text-rose-300' : 'text-zinc-500');
   }
+  if (dot) {
+    dot.classList.toggle('bg-rose-400', state.wakeWordEnabled && state.wakeWordListening);
+    dot.classList.toggle('animate-pulse', state.wakeWordEnabled && state.wakeWordListening);
+    dot.classList.toggle('bg-zinc-600', !(state.wakeWordEnabled && state.wakeWordListening));
+  }
   if (pill) {
     if (state.wakeWordListening) pill.classList.remove('hidden');
     else pill.classList.add('hidden');
@@ -737,9 +778,14 @@ function renderWakeWordUI() {
 
 function loadWakePreference() {
   try {
+    if (!localStorage.getItem(WAKE_STORAGE_KEY)) {
+      // Default: always-on continuous wake word
+      localStorage.setItem(WAKE_STORAGE_KEY, 'on');
+      return true;
+    }
     return localStorage.getItem(WAKE_STORAGE_KEY) === 'on';
   } catch (e) {
-    return false;
+    return true;
   }
 }
 
@@ -928,6 +974,9 @@ async function executeVoiceCommand(text, opts = {}) {
   const res = await apiFetch('/api/voice/command', 'POST', { text: trimmed });
   if (res) {
     handleVoiceCommandResult(res, opts);
+  } else {
+    flashOrbError();
+    if (statusLabel) statusLabel.textContent = 'Offline — command failed';
   }
   if (statusLabel) statusLabel.textContent = 'Tap the orb to speak';
 }
@@ -954,6 +1003,19 @@ function matchUIAction(text) {
 function handleVoiceCommandResult(res, opts = {}) {
   const resultBanner = document.getElementById('voiceResultBanner');
   const resultMsg = document.getElementById('voiceResultMsg');
+
+  // Surface failures with an accurate error and an orb error state
+  if (!res || !res.ok) {
+    flashOrbError();
+    if (resultMsg) {
+      resultMsg.textContent = (res && res.error) || 'Command failed — please try again';
+      if (resultBanner) {
+        resultBanner.classList.remove('hidden');
+        setTimeout(() => resultBanner.classList.add('hidden'), 5000);
+      }
+    }
+    return;
+  }
 
   // If the backend classified this as a UI navigation command, execute it client-side
   if (res.command_type === 'ui' && !opts.fromUIAction) {
@@ -991,6 +1053,44 @@ function handleVoiceCommandResult(res, opts = {}) {
 }
 
 function speakText(text, opts = {}) {
+  const msgId = markChatSpeaking(opts.chatMark !== false);
+
+  const finish = () => {
+    if (msgId != null) unmarkChatSpeaking(msgId);
+    setOrbState('success');
+    setTimeout(() => setOrbState('idle'), 800);
+  };
+  const fail = () => {
+    if (msgId != null) unmarkChatSpeaking(msgId);
+    setOrbState('idle');
+  };
+
+  const useBackendTts = state.config && state.config.tts_enabled !== false;
+  if (useBackendTts) {
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('TTS backend unavailable');
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        setOrbState('speaking');
+        audio.onended = () => { URL.revokeObjectURL(url); finish(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); fail(); };
+        audio.play().catch(() => { URL.revokeObjectURL(url); speakTextFallback(text, finish, fail); });
+      })
+      .catch(() => speakTextFallback(text, finish, fail));
+  } else {
+    speakTextFallback(text, finish, fail);
+  }
+}
+
+function speakTextFallback(text, finish, fail) {
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -1002,24 +1102,29 @@ function speakText(text, opts = {}) {
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
-    // Mark the last assistant chat message as "speaking" while TTS runs
-    const msgId = markChatSpeaking(opts.chatMark !== false);
     utterance.onstart = () => setOrbState('speaking');
-    utterance.onend = () => {
-      if (msgId != null) unmarkChatSpeaking(msgId);
-      setOrbState('success');
-      setTimeout(() => setOrbState('idle'), 800);
-    };
-    utterance.onerror = () => {
-      if (msgId != null) unmarkChatSpeaking(msgId);
-      setOrbState('idle');
-    };
+    utterance.onend = finish;
+    utterance.onerror = fail;
     window.speechSynthesis.speak(utterance);
     setOrbState('speaking');
   } catch (err) {
     console.warn('Speech synthesis error:', err);
-    setOrbState('success');
-    setTimeout(() => setOrbState('idle'), 800);
+    finish();
+  }
+}
+
+async function loadServerConfig() {
+  try {
+    const res = await fetch('/api/config');
+    if (!res.ok) throw new Error('Config load failed');
+    const data = await res.json();
+    state.config = data;
+    if (data.tts_enabled === false || data.tts_engine) {
+      // Reflect backend TTS availability in state
+      state.backendTtsAvailable = data.tts_enabled !== false;
+    }
+  } catch (err) {
+    console.warn('[Config] Failed to load server config:', err);
   }
 }
 
@@ -1074,7 +1179,7 @@ function setOrbState(state) {
   const statusText = document.getElementById('orbStatusText');
   if (!container) return;
 
-  container.classList.remove('orb-listening', 'orb-processing', 'orb-speaking', 'orb-success');
+  container.classList.remove('orb-listening', 'orb-processing', 'orb-speaking', 'orb-success', 'orb-error');
   container.classList.add(`orb-${state}`);
 
   if (statusText) {
@@ -1083,7 +1188,8 @@ function setOrbState(state) {
       listening: 'Listening...',
       processing: 'Thinking...',
       speaking: 'Speaking',
-      success: 'Done!'
+      success: 'Done!',
+      error: 'Something went wrong'
     };
     statusText.textContent = labels[state] || 'Ready';
   }
@@ -1156,6 +1262,11 @@ function startOrbWaveform(active) {
 function flashOrbSuccess() {
   setOrbState('success');
   setTimeout(() => setOrbState('idle'), 1400);
+}
+
+function flashOrbError() {
+  setOrbState('error');
+  setTimeout(() => setOrbState('idle'), 2000);
 }
 
 // ==========================================
@@ -1267,6 +1378,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPWA();
   initWebSpeech();
   loadChatFromStorage();
+  loadPanelState();
   renderChat();
   renderChatPanelState();
   renderCameraPanel();
@@ -1319,8 +1431,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setOrbState(orbState); // restart the rAF waveform if active
   });
 
-  // Auto-start persisted wake word after app/web restart
-  autoStartWakeWord();
+  // Load runtime config first, then auto-start the persisted wake word
+  loadServerConfig().then(() => {
+    // Reflect the configured wake phrase on the indicator pill
+    const pill = document.getElementById('wakePill');
+    if (pill && state.config && state.config.wake_phrase) {
+      pill.textContent = '"' + state.config.wake_phrase + '" — Listening for your voice';
+    }
+    autoStartWakeWord();
+  });
 
   // Clean up transient resources when the app is closed
   window.addEventListener('pagehide', () => {

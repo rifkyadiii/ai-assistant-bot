@@ -12,6 +12,7 @@ import webbrowser
 from config.settings import SERVER_HOST, SERVER_PORT
 from src.core.logger import activity_logger
 from src.services.search_service import search_service
+from src.services.tts_service import tts_service
 from src.services.vision_service import vision_service
 from src.services.voice_service import voice_service
 from src.web.app import start_web_server
@@ -41,6 +42,7 @@ def _cleanup_services() -> None:
         camera_manager.stop()
         vision_service.release()
         voice_service.stop_listening()
+        tts_service.stop()
         search_service.clear_history()
         activity_logger.log("VoiceBot application stopped", category="SYS")
     except Exception as exc:

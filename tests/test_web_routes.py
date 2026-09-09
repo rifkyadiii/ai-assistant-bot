@@ -63,17 +63,17 @@ def test_index_route_contract_has_required_ui_elements(client):
         'id="chatInput"',
         'id="cameraFloat"',
         'id="cameraVideoFeed"',
-        'id="cameraMinToggle"',
+        'id="cameraTab"',
         'id="hamburgerBtn"',
         'id="controlBar"',
         'id="wakePill"',
-        'id="wakeWordToggle"',
+        'id="chatMicBtn"',
         'id="voiceTranscriptText"',
         'id="voiceStatusLabel"',
         'Hey Sobot',
         'Transcript Chat',
         'Camera',
-        'VoiceBot OS — Controls',
+        'VoiceBot OS — Guide',
     ]
     for widget in required_ui_elements:
         assert widget in html
@@ -189,3 +189,37 @@ def test_api_clipboard_get_route_failure(client, monkeypatch):
     data = res.get_json()
     assert data["ok"] is False
     assert data["error"] == "boom"
+
+
+def test_api_config_route(client):
+    res = client.get("/api/config")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["ok"] is True
+    assert "wake_phrase" in data
+    assert "tts_enabled" in data
+    assert "poll_status_interval" in data
+    assert "api_key" not in str(data)
+
+
+def test_api_gemini_health_route(client):
+    res = client.get("/api/gemini/health")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["ok"] is True
+    assert "model" in data
+    assert "supported_models" in data
+    assert "gemini-pro" not in data["supported_models"]
+
+
+def test_api_tts_empty_text_rejected(client):
+    res = client.post("/api/tts", json={"text": "   "})
+    assert res.status_code == 400
+
+
+def test_api_tts_unavailable(client, monkeypatch):
+    from src.services.tts_service import TTSService
+
+    monkeypatch.setattr(TTSService, "is_available", property(lambda self: False))
+    res = client.post("/api/tts", json={"text": "hello"})
+    assert res.status_code == 503

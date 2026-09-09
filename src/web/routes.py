@@ -12,14 +12,27 @@ from flask import (
     jsonify,
     render_template,
     request,
+    send_file,
     send_from_directory,
 )
 
-from config.settings import BASE_DIR, COMMANDS
+from config.settings import (
+    BASE_DIR,
+    COMMANDS,
+    SERVER_PORT,
+    STATUS_POLL_INTERVAL,
+    LOGS_POLL_INTERVAL,
+    TTS_ENABLED,
+    TTS_VOICE,
+    TTS_RATE,
+    TTS_VOLUME,
+    WAKE_PHRASE,
+)
 from src.core.logger import activity_logger
 from src.services.desktop_service import desktop_service
 from src.services.search_service import search_service
 from src.services.system_service import system_service
+from src.services.tts_service import tts_service
 from src.services.vision_service import vision_service
 from src.services.voice_service import voice_service
 from src.web.camera_stream import camera_manager
@@ -79,6 +92,33 @@ def video_feed():
 # ==========================================
 # System Telemetry & Status API
 # ==========================================
+
+@web_bp.route("/api/config", methods=["GET"])
+def api_config():
+    """Return safe, non-secret frontend configuration."""
+    return jsonify({
+        "ok": True,
+        "wake_phrase": WAKE_PHRASE,
+        "tts_enabled": TTS_ENABLED,
+        "tts_voice": TTS_VOICE,
+        "tts_rate": TTS_RATE,
+        "tts_volume": TTS_VOLUME,
+        "poll_status_interval": STATUS_POLL_INTERVAL,
+        "poll_logs_interval": LOGS_POLL_INTERVAL,
+        "port": SERVER_PORT,
+    })
+
+
+@web_bp.route("/api/gemini/health", methods=["GET"])
+def api_gemini_health():
+    """Report Gemini configuration status for diagnostics (no secrets)."""
+    return jsonify({
+        "ok": True,
+        "configured": search_service.is_configured,
+        "model": search_service._configured_model,
+        "supported_models": list(search_service.SUPPORTED_MODELS),
+    })
+
 
 @web_bp.route("/api/status", methods=["GET"])
 def api_status():
@@ -242,6 +282,35 @@ def api_voice_toggle():
     """Toggle continuous background voice listening on server."""
     is_active = voice_service.toggle_listening()
     return jsonify({"ok": True, "listening": is_active})
+
+
+@web_bp.route("/api/tts", methods=["POST"])
+def api_tts():
+    """Synthesize text to speech using edge-tts and return an MP3 audio file."""
+    data: dict[str, Any] = request.get_json(silent=True) or {}
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "No text provided"}), 400
+    if not TTS_ENABLED or not tts_service.is_available:
+        return jsonify({"ok": False, "error": "Server TTS unavailable"}), 503
+
+    audio_path = tts_service.generate_audio(text)
+    if not audio_path:
+        return jsonify({"ok": False, "error": "TTS synthesis failed"}), 500
+
+    try:
+        return send_file(
+            audio_path,
+            mimetype="audio/mpeg",
+            as_attachment=False,
+            download_name="voicebot_tts.mp3",
+        )
+    finally:
+        # Clean up the temp file after sending (best-effort)
+        try:
+            audio_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 # ==========================================

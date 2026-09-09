@@ -125,6 +125,7 @@ class SearchService:
         ]
 
         last_exc: Exception | None = None
+        errors_by_model: list[str] = []
         for model_name in models_to_try:
             try:
                 response = client.models.generate_content(
@@ -136,12 +137,14 @@ class SearchService:
                     return response.text.strip(), f"gemini ({model_name})"
             except Exception as exc:
                 last_exc = exc
+                errors_by_model.append(f"{model_name}: {exc}")
                 continue
 
         # If all model attempts fail, report a precise reason instead of a generic offline message
         reason = self._classify_error(last_exc) if last_exc else "unknown API error"
         activity_logger.log(
-            f"Gemini API error across all models: {last_exc}", category="SEARCH", level="ERROR"
+            f"Gemini API error across all models. Tried: {', '.join(errors_by_model)}",
+            category="SEARCH", level="ERROR",
         )
         return (
             f"Unable to complete LLM search: {reason}.\n\n"

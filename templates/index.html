@@ -49,38 +49,35 @@
 
   <!-- Floating Camera Preview (upper-right, expanded by default) -->
   <div id="cameraFloat" class="camera-float">
-    <div class="camera-frame rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md shadow-xl shadow-black/40">
-      <div class="flex items-center justify-between px-2.5 py-1.5 bg-zinc-900/90 border-b border-zinc-800">
-        <span class="text-[10px] font-bold tracking-widest uppercase text-zinc-400 flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-          Camera
-          <span id="cameraStatusBadge" class="text-[11px] font-semibold text-cyan-300">ON</span>
-        </span>
-        <button onclick="toggleCameraPanel()" id="cameraMinToggle" aria-label="Minimize camera"
-                class="camera-min-btn w-6 h-6 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300">
-          <span id="cameraMinBtnIcon">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/></svg>
+    <div class="camera-frame-wrap relative">
+      <div class="camera-frame rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md shadow-xl shadow-black/40">
+        <div class="flex items-center justify-between px-2.5 py-1.5 bg-zinc-900/90 border-b border-zinc-800">
+          <span class="text-[10px] font-bold tracking-widest uppercase text-zinc-400 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+            Camera
+            <span id="cameraStatusBadge" class="text-[11px] font-semibold text-cyan-300">ON</span>
           </span>
-        </button>
+        </div>
+        <img id="cameraVideoFeed" src="/video_feed" alt="Camera preview"
+             class="w-full h-40 sm:h-44 object-cover bg-black">
+        <div class="flex items-center justify-between px-2.5 py-2 bg-zinc-900/90 border-t border-zinc-800 gap-1">
+          <span id="cursorStatusPill" class="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border bg-zinc-900/80 border-zinc-700 text-zinc-400">
+            <span id="cursorControlStatusBadge" class="text-[11px] font-semibold text-zinc-500">VIEW ONLY</span>
+          </span>
+          <button onclick="toggleDesktopCursorControl()" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-cyan-300 transition-colors">
+            Cursor Control
+          </button>
+        </div>
       </div>
-      <img id="cameraVideoFeed" src="/video_feed" alt="Camera preview"
-           class="w-full h-40 sm:h-44 object-cover bg-black">
-      <div class="flex items-center justify-between px-2.5 py-2 bg-zinc-900/90 border-t border-zinc-800 gap-1">
-        <span id="cursorStatusPill" class="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border bg-zinc-900/80 border-zinc-700 text-zinc-400">
-          <span id="cursorControlStatusBadge" class="text-[11px] font-semibold text-zinc-500">VIEW ONLY</span>
-        </span>
-        <button onclick="toggleDesktopCursorControl()" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-cyan-300 transition-colors">
-          Cursor Control
-        </button>
-      </div>
+      <div id="gesturePill" class="gesture-pill absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-md bg-zinc-900/80 border-zinc-700/50 text-zinc-400 whitespace-nowrap shadow-lg">Searching Hand...</div>
     </div>
-    <!-- Persistent tab: stays visible when the preview is minimized -->
-    <button id="cameraTab" onclick="toggleCameraPanel()" aria-label="Show camera preview"
-            class="camera-tab hidden items-center gap-1.5 px-2.5 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700 text-cyan-300 shadow-xl shadow-black/40">
-      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 15.5l1.35 2.7H6.9l1.35-2.7A4 4 0 018 12.75h8a4 4 0 00-.25 2.75z"/><rect x="7" y="11" width="10" height="7" rx="1.5"/></svg>
-      <span class="text-[10px] font-bold tracking-widest uppercase">Camera</span>
+    <!-- Persistent toggle button: its position never changes between states -->
+    <button id="cameraTab" onclick="toggleCameraPanel()" aria-label="Minimize camera preview"
+            class="camera-tab items-center justify-center w-8 h-8 rounded-xl bg-zinc-900/90 border border-zinc-700 text-cyan-300 shadow-xl shadow-black/40 transition-colors hover:border-cyan-500/50 hover:text-cyan-200">
+      <span id="cameraMinBtnIcon">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/></svg>
+      </span>
     </button>
-    <div id="gesturePill" class="gesture-pill absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-md bg-zinc-900/80 border-zinc-700/50 text-zinc-400 whitespace-nowrap shadow-lg">Searching Hand...</div>
   </div>
 
   <!-- Main Viewport -->
@@ -118,9 +115,16 @@
       <p id="voiceStatusLabel" class="text-[10px] uppercase tracking-widest text-zinc-600">Tap the orb to speak</p>
     </div>
 
-    <!-- Wake Word Pill -->
-    <div id="wakePill" class="wake-indicator hidden mt-3 px-3 py-1 rounded-full text-[11px] font-bold border border-rose-500/50 bg-rose-950/70 text-rose-300 shadow-lg">
-      "Hey Sobot" — Listening for your voice
+    <!-- Wake Word Pill + Toggle (always visible outside the guide) -->
+    <div class="mt-3 flex items-center gap-2">
+      <div id="wakePill" class="wake-indicator hidden px-3 py-1 rounded-full text-[11px] font-bold border border-rose-500/50 bg-rose-950/70 text-rose-300 shadow-lg">
+        "Hey Sobot" — Listening for your voice
+      </div>
+      <button id="wakeWordToggle" onclick="toggleWakeWord()" aria-label="Toggle wake word"
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-900/80 border border-zinc-700 text-zinc-400 hover:border-rose-500/50 hover:text-rose-300 transition-colors">
+        <span id="wakeWordStatusDot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+        Hey Sobot: <span id="wakeWordStatus" class="font-bold text-zinc-500">OFF</span>
+      </button>
     </div>
 
     <!-- Voice Result Banner -->
@@ -159,6 +163,10 @@
           <div class="flex items-center gap-2">
             <input id="chatInput" type="text" autocomplete="off" placeholder="Type a command or question..."
                    class="flex-1 px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/40 transition-all">
+            <button type="button" id="chatMicBtn" onclick="toggleOrbInteraction()" aria-label="Start voice input"
+                    class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 10v2a7 7 0 01-14 0v-2m7 9v3m-4 0h8"/></svg>
+            </button>
             <button type="button" onclick="collapseChatInput()" aria-label="Collapse input"
                     class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -173,12 +181,12 @@
     </section>
   </main>
 
-  <!-- Fullscreen Control Bar -->
-  <div id="controlBar" class="control-bar-overlay" aria-label="Control bar">
+  <!-- Fullscreen Guide Menu -->
+  <div id="controlBar" class="control-bar-overlay" aria-label="Guide menu">
     <div class="control-bar-shell w-full max-w-md flex flex-col overflow-hidden">
       <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-zinc-800/80 shrink-0 bg-zinc-950/95">
-        <span class="text-[10px] uppercase tracking-widest text-zinc-500">VoiceBot OS — Controls</span>
-        <button onclick="closeControlBar()" aria-label="Close controls"
+        <span class="text-[10px] uppercase tracking-widest text-zinc-500">VoiceBot OS — Guide</span>
+        <button onclick="closeControlBar()" aria-label="Close guide"
                 class="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300 transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -189,7 +197,7 @@
         <div class="glass-panel rounded-2xl p-4 border border-zinc-800/80 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span id="connectionDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="connectionText" class="text-xs text-zinc-300">System Online</span>
+            <span id="connectionText" class="text-xs text-zinc-300">Sobot is online</span>
           </div>
           <div class="flex items-center gap-2">
             <span id="pwaModeBadge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">STANDALONE</span>
@@ -197,30 +205,57 @@
           </div>
         </div>
 
-        <!-- Voice Controls -->
+        <!-- How to talk to Sobot -->
         <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80">
-          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Voice</h3>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="toggleOrbInteraction()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-red-600/20 border border-red-500/40 text-red-300 hover:bg-red-600/30 transition-colors">Speak Now</button>
-            <button id="serverVoiceStatusPill" onclick="toggleServerVoiceListener()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">
-              Server Mic <span id="serverMicStatusBadge" class="text-[11px] font-semibold text-zinc-500">IDLE</span>
-            </button>
-            <button id="wakeWordToggle" onclick="toggleWakeWord()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">
-              Wake Word <span id="wakeWordStatus" class="text-[11px] font-semibold text-zinc-500">OFF</span>
-            </button>
-          </div>
-          <p class="mt-2.5 text-[10px] text-zinc-500">Enable "Hey Sobot" for hands-free activation of every command.</p>
+          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-2">How to talk to Sobot</h3>
+          <ul class="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+            <li><span class="text-rose-300 font-semibold">"Hey Sobot"</span> — wake word, activates hands-free listening</li>
+            <li><span class="text-cyan-300">Tap the orb</span> — start / stop voice input anytime</li>
+            <li><span class="text-cyan-300">Mic button</span> in the transcript — voice input from the chat</li>
+            <li><span class="text-cyan-300">Type</span> a command in the transcript input</li>
+          </ul>
         </section>
 
-        <!-- Camera Control -->
-        <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
-          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Camera</h3>
+        <!-- Voice example commands -->
+        <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80">
+          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-2">Voice commands</h3>
+          <ul class="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+            <li><span class="text-zinc-200">🔊 Volume</span> — "volume up", "set volume to 80 percent", "mute / unmute"</li>
+            <li><span class="text-zinc-200">☀️ Brightness</span> — "brightness up", "set brightness to 50 percent"</li>
+            <li><span class="text-zinc-200">📸 Screenshot</span> — "take a screenshot"</li>
+            <li><span class="text-zinc-200">📋 Clipboard</span> — "copy this", "copy to clipboard"</li>
+            <li><span class="text-zinc-200">🌐 Web search</span> — "search for the tallest mountain"</li>
+            <li><span class="text-zinc-200">🗔 Apps & media</span> — "open calculator", "play music", "next song"</li>
+            <li><span class="text-zinc-200">🔒 Lock screen</span> — "lock the screen"</li>
+            <li><span class="text-zinc-200">🖱️ Cursor</span> — "enable cursor", "disable cursor"</li>
+            <li><span class="text-zinc-200">🖥️ Camera</span> — "show camera", "hide camera"</li>
+            <li><span class="text-zinc-200">💬 Transcript</span> — "clear chat", "show chat", "hide chat"</li>
+          </ul>
+        </section>
+
+        <!-- Gestures -->
+        <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80">
+          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-2">Hand gestures</h3>
+          <ul class="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+            <li><span class="text-cyan-300">Index finger up</span> — move the desktop cursor</li>
+            <li><span class="text-cyan-300">Pinch</span> (thumb + index) — left click</li>
+            <li><span class="text-cyan-300">Middle finger up</span> — scroll up / down</li>
+          </ul>
+          <p class="mt-2 text-[10px] text-zinc-500">Enable cursor control from the camera panel or with "enable cursor".</p>
+        </section>
+
+        <!-- Example commands -->
+        <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80">
+          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Try saying</h3>
           <div class="flex flex-wrap gap-2">
-            <button onclick="toggleCameraFeed()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-cyan-300 hover:bg-zinc-700 transition-colors">Camera ON/OFF</button>
-            <button onclick="toggleCameraPanel()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-cyan-300 hover:bg-zinc-700 transition-colors">Show/Hide Preview</button>
-            <button onclick="toggleDesktopCursorControl()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-emerald-300 hover:bg-zinc-700 transition-colors">Cursor Control</button>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-950/70 border border-rose-500/30 text-rose-200">"Hey Sobot"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Take a screenshot"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Set volume to 80 percent"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Set brightness to 70 percent"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Search black holes"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Open calculator"</span>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-zinc-800 border border-zinc-700 text-zinc-300">"Lock the screen"</span>
           </div>
-          <p class="mt-2.5 text-[10px] text-zinc-500">Point to move the cursor, pinch to click, middle finger to scroll.</p>
         </section>
       </div>
     </div>

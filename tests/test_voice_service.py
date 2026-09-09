@@ -34,6 +34,32 @@ def test_set_volume_exact_number(voice_service_instance):
     assert res["value"] == 75
 
 
+def test_volume_up_to_exact_number(voice_service_instance):
+    res = voice_service_instance.process_text("volume up to 80 percent")
+    assert res["ok"] is True
+    assert res["action"] == "set_volume"
+    assert res["value"] == 80
+
+
+def test_increase_volume_to_exact_number(voice_service_instance):
+    res = voice_service_instance.process_text("increase volume to 70 percent")
+    assert res["ok"] is True
+    assert res["action"] == "set_volume"
+    assert res["value"] == 70
+
+
+def test_relative_volume_up_still_works(voice_service_instance):
+    res = voice_service_instance.process_text("volume up")
+    assert res["ok"] is True
+    assert res["action"] == "volume_up"
+
+
+def test_volume_clamped_to_range(voice_service_instance):
+    res = voice_service_instance.process_text("set volume to 150")
+    assert res["ok"] is True
+    assert res["value"] == 100
+
+
 def test_mute_unmute_parsing(voice_service_instance):
     res_mute = voice_service_instance.process_text("mute sound")
     assert res_mute["ok"] is True
@@ -57,6 +83,32 @@ def test_set_brightness_exact_number(voice_service_instance):
     assert res["command_type"] == "brightness"
     assert res["action"] == "set_brightness"
     assert res["value"] == 45
+
+
+def test_brightness_up_to_exact_number(voice_service_instance):
+    res = voice_service_instance.process_text("brightness up to 70 percent")
+    assert res["ok"] is True
+    assert res["action"] == "set_brightness"
+    assert res["value"] == 70
+
+
+def test_increase_brightness_to_exact_number(voice_service_instance):
+    res = voice_service_instance.process_text("increase brightness to 90 percent")
+    assert res["ok"] is True
+    assert res["action"] == "set_brightness"
+    assert res["value"] == 90
+
+
+def test_relative_brightness_up_still_works(voice_service_instance):
+    res = voice_service_instance.process_text("brightness up")
+    assert res["ok"] is True
+    assert res["action"] == "brightness_up"
+
+
+def test_brightness_clamped_to_range(voice_service_instance):
+    res = voice_service_instance.process_text("set brightness to 250 percent")
+    assert res["ok"] is True
+    assert res["value"] == 100
 
 
 def test_cursor_toggle_parsing(voice_service_instance):
