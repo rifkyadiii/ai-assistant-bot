@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import signal
 import sys
 import threading
@@ -10,6 +11,7 @@ import webbrowser
 
 from config.settings import SERVER_HOST, SERVER_PORT
 from src.core.logger import activity_logger
+from src.services.search_service import search_service
 from src.services.vision_service import vision_service
 from src.services.voice_service import voice_service
 from src.web.app import start_web_server
@@ -29,11 +31,24 @@ def open_browser() -> None:
 def shutdown_handler(sig=None, frame=None) -> None:
     """Gracefully stop background threads and hardware resources."""
     print("\nShutting down VoiceBot OS gracefully...")
-    camera_manager.stop()
-    vision_service.release()
-    voice_service.stop_listening()
-    activity_logger.log("VoiceBot application stopped", category="SYS")
+    _cleanup_services()
     sys.exit(0)
+
+
+def _cleanup_services() -> None:
+    """Stop all background threads and reset application state."""
+    try:
+        camera_manager.stop()
+        vision_service.release()
+        voice_service.stop_listening()
+        search_service.clear_history()
+        activity_logger.log("VoiceBot application stopped", category="SYS")
+    except Exception as exc:
+        print(f"Cleanup warning: {exc}")
+
+
+# Ensure the clean shutdown path also runs for unexpected exits
+atexit.register(_cleanup_services)
 
 
 def main() -> None:

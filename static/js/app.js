@@ -22,6 +22,7 @@ const state = {
   chatMessages: [],
   chatExpanded: true,
   chatInputExpanded: false,
+  chatUnread: 0,
   cameraExpanded: true,
   controlBarOpen: false,
   wakeWordEnabled: false,
@@ -394,8 +395,13 @@ function renderCameraPanel() {
     }
   }
 
-  if (feed && state.cameraExpanded && state.cameraActive) {
-    feed.src = '/video_feed?' + Date.now();
+  // Pause the MJPEG stream while minimized to save CPU; resume when expanded
+  if (feed) {
+    if (state.cameraExpanded && state.cameraActive) {
+      feed.src = '/video_feed?' + Date.now();
+    } else if (!state.cameraExpanded) {
+      feed.src = '';
+    }
   }
 }
 
@@ -463,11 +469,22 @@ function addToChat(role, text) {
     state.chatMessages = state.chatMessages.slice(-200);
   }
   saveChatToStorage();
+  // While collapsed, keep the panel minimized but surface the new activity via the badge
+  if (!state.chatExpanded && role !== 'system') {
+    state.chatUnread += 1;
+  }
   renderChat();
-  // Ensure chat panel is visible when a message arrives
-  if (!state.chatExpanded) {
-    state.chatExpanded = true;
-    renderChatPanelState();
+  renderChatPanelState();
+}
+
+function updateChatUnreadBadge() {
+  const badge = document.getElementById('chatUnreadBadge');
+  if (!badge) return;
+  if (!state.chatExpanded && state.chatUnread > 0) {
+    badge.textContent = state.chatUnread > 99 ? '99+' : String(state.chatUnread);
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
   }
 }
 
@@ -504,19 +521,25 @@ function renderChat() {
 
 function clearChat() {
   state.chatMessages = [];
+  state.chatUnread = 0;
   saveChatToStorage();
   renderChat();
+  renderChatPanelState();
   showToast('Chat cleared', 'info');
 }
 
 function toggleChatPanel() {
   state.chatExpanded = !state.chatExpanded;
+  if (state.chatExpanded) {
+    state.chatUnread = 0;
+  }
   renderChatPanelState();
 }
 
 function renderChatPanelState() {
   const panel = document.getElementById('chatPanel');
   if (panel) panel.classList.toggle('collapsed', !state.chatExpanded);
+  updateChatUnreadBadge();
 }
 
 function expandChatInput() {
@@ -552,11 +575,21 @@ function sendChatMessage() {
 // ==========================================
 let wakeRecognition = null;
 const WAKE_PHRASE = 'hey sobot';
+const WAKE_STORAGE_KEY = 'voicebot_wake_v1';
+
+function saveWakePreference() {
+  try {
+    if (state.wakeWordEnabled) localStorage.setItem(WAKE_STORAGE_KEY, 'on');
+    else localStorage.removeItem(WAKE_STORAGE_KEY);
+  } catch (e) {
+    console.warn('[WakeWord] Failed to persist preference:', e);
+  }
+}
 
 function startWakeWord() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    showToast('Wake word not supported in this browser', 'warning');
+    console.warn('[WakeWord] Not supported in this browser');
     return false;
   }
 
@@ -584,15 +617,26 @@ function startWakeWord() {
 
   wakeRecognition.onerror = (event) => {
     console.warn('[WakeWord] Error:', event.error);
-    // Auto-restart unless disabled
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      // Microphone permission denied — request consent and stop silently
+      state.wakeWordEnabled = false;
+      saveWakePreference();
+      stopWakeWord();
+      showMicConsent();
+      return;
+    }
+    // Auto-restart unless disabled (network / no-speech are transient)
     if (state.wakeWordEnabled && event.error !== 'aborted') {
-      setTimeout(() => { if (state.wakeWordEnabled) startWakeWord(); }, 300);
+      setTimeout(() => { if (state.wakeWordEnabled && !document.hidden) startWakeWord(); }, 300);
     }
   };
 
   wakeRecognition.onend = () => {
     if (state.wakeWordEnabled) {
-      setTimeout(() => { if (state.wakeWordEnabled) startWakeWord(); }, 200);
+      // Browsers can stop the engine; transparently resume unless the tab is hidden
+      setTimeout(() => {
+        if (state.wakeWordEnabled && !document.hidden) startWakeWord();
+      }, 200);
     } else {
       state.wakeWordListening = false;
       renderWakeWordUI();
@@ -608,6 +652,20 @@ function startWakeWord() {
   }
 }
 
+function startWakeWordFromUserGesture() {
+  const ok = startWakeWord();
+  if (ok) {
+    state.wakeWordEnabled = true;
+    saveWakePreference();
+    showToast('Wake word "Hey Sobot" enabled', 'success');
+  } else {
+    state.wakeWordEnabled = false;
+    showToast('Wake word setup failed', 'error');
+  }
+  renderWakeWordUI();
+  return ok;
+}
+
 function handleWakeWordTranscript(transcript) {
   // Check if the transcript contains the wake phrase
   if (!transcript.includes(WAKE_PHRASE)) return;
@@ -617,6 +675,7 @@ function handleWakeWordTranscript(transcript) {
 
   // Signal wake word detected
   state.wakeWordEnabled = true;
+  saveWakePreference();
   flashWakePill();
   setOrbState('listening');
 
@@ -637,14 +696,13 @@ function flashWakePill() {
 }
 
 function toggleWakeWord() {
-  state.wakeWordEnabled = !state.wakeWordEnabled;
   if (state.wakeWordEnabled) {
-    const ok = startWakeWord();
-    if (!ok) state.wakeWordEnabled = false;
-    showToast(ok ? 'Wake word "Hey Sobot" enabled' : 'Wake word setup failed', ok ? 'success' : 'error');
-  } else {
     stopWakeWord();
+    saveWakePreference();
     showToast('Wake word disabled', 'info');
+  } else {
+    const ok = startWakeWordFromUserGesture();
+    if (!ok) showMicConsent();
   }
   renderWakeWordUI();
 }
@@ -675,6 +733,46 @@ function renderWakeWordUI() {
     if (state.wakeWordListening) pill.classList.remove('hidden');
     else pill.classList.add('hidden');
   }
+}
+
+function loadWakePreference() {
+  try {
+    return localStorage.getItem(WAKE_STORAGE_KEY) === 'on';
+  } catch (e) {
+    return false;
+  }
+}
+
+function autoStartWakeWord() {
+  // Persisted opt-in: restart listening automatically after page/app reload
+  if (!loadWakePreference()) return;
+  const ok = startWakeWord();
+  if (ok) {
+    state.wakeWordEnabled = true;
+  } else {
+    // Browser may have revoked permission — surface the one-tap consent choice
+    showMicConsent();
+  }
+  renderWakeWordUI();
+}
+
+// ==========================================
+// Microphone Consent Overlay
+// ==========================================
+function showMicConsent() {
+  const overlay = document.getElementById('micConsentOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function dismissMicConsent() {
+  const overlay = document.getElementById('micConsentOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function requestMicPermission() {
+  dismissMicConsent();
+  // Called from a user gesture, so the permission prompt is allowed
+  startWakeWordFromUserGesture();
 }
 
 // ==========================================
@@ -1024,24 +1122,31 @@ function startOrbWaveform(active) {
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-    let frame = 0;
 
-    orbWaveAnim = setInterval(() => {
+    const draw = (time) => {
+      // Pause drawing while the tab is hidden to save battery
+      if (document.hidden) {
+        orbWaveAnim = requestAnimationFrame(draw);
+        return;
+      }
       ctx.clearRect(0, 0, width, height);
       const bars = 20;
       const barW = width / bars;
+      // Use elapsed time so the animation does not jump when resumed
       for (let i = 0; i < bars; i++) {
-        const base = Math.sin(frame * 0.2 + i * 0.6) * 0.5 + 0.5;
-        const vibrate = Math.sin(frame * 0.5 + i * 0.3) * 0.2;
+        const base = Math.sin(time * 0.003 + i * 0.6) * 0.5 + 0.5;
+        const vibrate = Math.sin(time * 0.008 + i * 0.3) * 0.2;
         const barH = 6 + base * 24 + vibrate * 10;
         const color = orbState === 'listening' ? 'rgba(239,68,68,0.7)' : 'rgba(168,85,247,0.7)';
         ctx.fillStyle = color;
         ctx.fillRect(i * barW + barW * 0.2, (height - barH) / 2, barW * 0.6, barH);
       }
-      frame++;
-    }, 40);
+      orbWaveAnim = requestAnimationFrame(draw);
+    };
+
+    orbWaveAnim = requestAnimationFrame(draw);
   } else if (!active && orbWaveAnim) {
-    clearInterval(orbWaveAnim);
+    cancelAnimationFrame(orbWaveAnim);
     orbWaveAnim = null;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1058,6 +1163,11 @@ function flashOrbSuccess() {
 // ==========================================
 
 async function desktopAction(action, payload = {}) {
+  // Clipboard with no payload means "read the clipboard" (never silently clear it)
+  if (action === 'clipboard' && !payload.text) {
+    readClipboard();
+    return;
+  }
   const res = await apiFetch('/api/desktop/action', 'POST', { action, payload });
   if (res && res.ok) {
     showToast(res.message || 'Action executed', 'success');
@@ -1066,6 +1176,16 @@ async function desktopAction(action, payload = {}) {
     showToast(res?.error || res?.message || 'Action failed', 'error');
   }
   refreshLogs();
+}
+
+async function readClipboard() {
+  const res = await apiFetch('/api/desktop/clipboard', 'GET');
+  if (res && res.ok) {
+    const text = res.text || '(empty clipboard)';
+    showToast(text.length > 120 ? text.slice(0, 117) + '...' : text, 'info');
+  } else {
+    showToast(res?.error || 'Clipboard read failed', 'error');
+  }
 }
 
 function renderVoiceStateUI() {
@@ -1182,4 +1302,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // Periodic polling for telemetry and logs
   setInterval(refreshStatus, 2500);
   setInterval(refreshLogs, 3000);
+
+  // Pause decorative animations while the tab is hidden (low CPU/GPU)
+  document.addEventListener('visibilitychange', () => {
+    document.body.classList.toggle('anim-paused', document.hidden);
+    if (document.hidden) {
+      // Pause speech recognition listeners while hidden; resume on focus
+      stopWebSpeech();
+      if (state.wakeWordEnabled) stopWakeWord();
+      if ('speechSynthesis' in window) window.speechSynthesis.pause();
+    } else {
+      if ('speechSynthesis' in window) window.speechSynthesis.resume();
+      if (state.wakeWordEnabled) startWakeWord();
+    }
+    renderWakeWordUI();
+    setOrbState(orbState); // restart the rAF waveform if active
+  });
+
+  // Auto-start persisted wake word after app/web restart
+  autoStartWakeWord();
+
+  // Clean up transient resources when the app is closed
+  window.addEventListener('pagehide', () => {
+    stopWakeWord();
+    stopWebSpeech();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
 });

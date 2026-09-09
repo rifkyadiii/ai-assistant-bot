@@ -12,21 +12,26 @@ from src.core.logger import activity_logger
 class SearchService:
     """Handles natural language queries and web searches powered by Google Gemini."""
 
-    # Models to try in order of preference if primary fails
-    FALLBACK_MODELS: list[str] = [
+    # Currently supported models, in preference order for fallback
+    SUPPORTED_MODELS: tuple[str, ...] = (
         "gemini-3.6-flash",
         "gemini-2.5-flash",
-        "gemini-1.5-flash",
         "gemini-2.0-flash",
-        "gemini-pro",
-    ]
+        "gemini-1.5-flash",
+    )
+
+    # Retired aliases that are no longer served by the API
+    DEPRECATED_MODELS: tuple[str, ...] = ("gemini-pro", "gemini-1.0-pro")
+
+    # Models to try in order of preference if primary fails
+    FALLBACK_MODELS: list[str] = list(SUPPORTED_MODELS)
 
     def __init__(self) -> None:
         self._api_key: str = GEMINI_API_KEY
         self._configured_model: str = GEMINI_MODEL
-        # If user left gemini-pro in settings or .env, prefer modern 3.6-flash first
-        if self._configured_model in ("gemini-pro", "gemini-1.0-pro"):
-            self._configured_model = "gemini-3.6-flash"
+        # Retired aliases no longer served by the API — prefer a supported model
+        if self._configured_model in self.DEPRECATED_MODELS:
+            self._configured_model = self.SUPPORTED_MODELS[0]
 
         self._client: Optional[Any] = None
         self._history: list[dict[str, Any]] = []
@@ -80,8 +85,34 @@ class SearchService:
 
         return result
 
+    @staticmethod
+    def _classify_error(exc: Exception) -> str:
+        """Return a human-readable, accurate explanation for a Gemini API error."""
+        raw = str(exc)
+        lowered = raw.lower()
+        code = getattr(exc, "code", None)
+        if code in (400, 404) or "not found" in lowered or "models/" in lowered:
+            return (
+                "The selected Gemini model is not available for this API key. "
+                "Set GEMINI_MODEL in .env to a supported model (e.g. gemini-2.5-flash)."
+            )
+        if code in (401,) or ("invalid" in lowered and "key" in lowered):
+            return "Your GEMINI_API_KEY appears to be invalid. Check the key in your .env file."
+        if code in (403,) or "permission denied" in lowered:
+            return "Access to the Gemini API was denied. Enable the Gemini API for your key in Google AI Studio."
+        if code in (429,) or "resource exhausted" in lowered or "quota" in lowered:
+            return "Gemini API quota exhausted. Check your usage limits or billing."
+        if code in (500, 503) or "internal" in lowered or "unavailable" in lowered:
+            return "The Gemini API is temporarily unavailable. Try again shortly."
+        return raw[:300]
+
     def _llm_search(self, query: str) -> tuple[str, str]:
         """Query Gemini models with automatic fallback on model deprecation/errors."""
+        client = self._client
+        if client is None:
+            activity_logger.log("Gemini client not configured; cannot run LLM search", category="SEARCH", level="WARNING")
+            return "The Gemini client is not configured. Set GEMINI_API_KEY in .env to enable AI search.", "error"
+
         prompt = (
             f"You are a helpful and concise voice assistant.\n"
             f"User request / search query: {query}\n\n"
@@ -93,10 +124,10 @@ class SearchService:
             m for m in self.FALLBACK_MODELS if m != self._configured_model
         ]
 
-        last_error = ""
+        last_exc: Exception | None = None
         for model_name in models_to_try:
             try:
-                response = self._client.models.generate_content(
+                response = client.models.generate_content(
                     model=model_name,
                     contents=prompt,
                 )
@@ -104,15 +135,17 @@ class SearchService:
                     activity_logger.log(f"Gemini response generated using {model_name}", category="SEARCH")
                     return response.text.strip(), f"gemini ({model_name})"
             except Exception as exc:
-                last_error = str(exc)
+                last_exc = exc
                 continue
 
-        # If all model attempts fail
-        activity_logger.log(f"Gemini API error across all models: {last_error}", category="SEARCH", level="ERROR")
+        # If all model attempts fail, report a precise reason instead of a generic offline message
+        reason = self._classify_error(last_exc) if last_exc else "unknown API error"
+        activity_logger.log(
+            f"Gemini API error across all models: {last_exc}", category="SEARCH", level="ERROR"
+        )
         return (
-            f"Unable to complete LLM search: {last_error}.\n\n"
-            f"Offline fallback: For questions regarding '{query}', verify your network connection "
-            f"and check that your GEMINI_API_KEY in .env has valid quota.",
+            f"Unable to complete LLM search: {reason}.\n\n"
+            f"Verify that GEMINI_API_KEY and GEMINI_MODEL in your .env are valid, then try again.",
             "error",
         )
 

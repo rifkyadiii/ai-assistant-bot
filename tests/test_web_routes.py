@@ -49,6 +49,36 @@ def test_service_worker_route(client):
     assert "voicebot-shell" in content
 
 
+def test_index_route_contract_has_required_ui_elements(client):
+    response = client.get("/")
+    assert response.status_code == 200
+
+    html = response.get_data(as_text=True)
+    required_ui_elements = [
+        'id="orbContainer"',
+        'id="chatPanel"',
+        'id="chatMessages"',
+        'id="chatInputBar"',
+        'id="chatInputToggle"',
+        'id="chatInput"',
+        'id="cameraFloat"',
+        'id="cameraVideoFeed"',
+        'id="cameraMinToggle"',
+        'id="hamburgerBtn"',
+        'id="controlBar"',
+        'id="wakePill"',
+        'id="wakeWordToggle"',
+        'id="voiceTranscriptText"',
+        'id="voiceStatusLabel"',
+        'Hey Sobot',
+        'Transcript Chat',
+        'Camera',
+        'VoiceBot OS — Controls',
+    ]
+    for widget in required_ui_elements:
+        assert widget in html
+
+
 def test_api_status(client):
     response = client.get("/api/status")
     assert response.status_code == 200
@@ -134,3 +164,28 @@ def test_api_logs(client):
     data = res.get_json()
     assert data["ok"] is True
     assert isinstance(data["entries"], list)
+
+
+def test_api_clipboard_get_route(client, monkeypatch):
+    from src.services.desktop_service import desktop_service
+
+    monkeypatch.setattr(desktop_service, "clipboard_get", lambda: "route test content")
+
+    res = client.get("/api/desktop/clipboard")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["ok"] is True
+    assert data["text"] == "route test content"
+
+
+def test_api_clipboard_get_route_failure(client, monkeypatch):
+    from src.services.desktop_service import desktop_service
+
+    monkeypatch.setattr(desktop_service, "clipboard_get", lambda: None)
+    desktop_service._last_error = "boom"
+
+    res = client.get("/api/desktop/clipboard")
+    assert res.status_code == 500
+    data = res.get_json()
+    assert data["ok"] is False
+    assert data["error"] == "boom"

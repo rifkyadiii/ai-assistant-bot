@@ -372,6 +372,15 @@ def api_desktop_clipboard():
     return jsonify({"ok": ok, "message": "Clipboard updated" if ok else "Clipboard update failed"})
 
 
+@web_bp.route("/api/desktop/clipboard", methods=["GET"])
+def api_desktop_clipboard_get():
+    """Read current clipboard content."""
+    value = desktop_service.clipboard_get()
+    if value is None and desktop_service._last_error:
+        return jsonify({"ok": False, "error": desktop_service._last_error}), 500
+    return jsonify({"ok": True, "text": value or ""})
+
+
 @web_bp.route("/api/desktop/open", methods=["POST"])
 def api_desktop_open():
     """Open a common application."""

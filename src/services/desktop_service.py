@@ -23,6 +23,7 @@ class DesktopControlService:
         self._system: str = platform.system()
         self._pyautogui: Optional[Any] = None
         self._pynput: Optional[Any] = None
+        self._last_error: Optional[str] = None
         self._init_libraries()
 
     def _init_libraries(self) -> None:
@@ -54,21 +55,45 @@ class DesktopControlService:
             return None
 
     def screenshot(self, save_path: Optional[str] = None) -> Optional[str]:
-        """Capture a screenshot. Returns saved file path or None."""
+        """Capture a screenshot using the best available backend.
+
+        Tries pyautogui first (X11/Windows), then Wayland/X11 command-line
+        tools. Returns the saved file path or None on failure.
+        """
+        self._last_error = None
+
+        if not save_path:
+            import os
+            from datetime import datetime
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop" if self._system == "Windows" else "Pictures")
+            os.makedirs(desktop, exist_ok=True)
+            save_path = os.path.join(desktop, f"voicebot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+
+        # 1. pyautogui (Windows / X11)
         if self._pyautogui:
             try:
                 img = self._pyautogui.screenshot()
-                if not save_path:
-                    import os
-                    from datetime import datetime
-                    desktop = os.path.join(os.path.expanduser("~"), "Desktop" if self._system == "Windows" else "Pictures")
-                    os.makedirs(desktop, exist_ok=True)
-                    save_path = os.path.join(desktop, f"voicebot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
                 img.save(save_path)
                 activity_logger.log(f"Screenshot saved: {save_path}", category="SYS")
                 return save_path
             except Exception as exc:
-                activity_logger.log(f"Screenshot error: {exc}", category="SYS", level="WARNING")
+                activity_logger.log(f"pyautogui screenshot error: {exc}", category="SYS", level="WARNING")
+                self._last_error = str(exc)
+
+        # 2. Command-line capture tools (Wayland + X11 fallbacks)
+        for tool, args in [
+            ("grim", ["grim", str(save_path)]),
+            ("scrot", ["scrot", str(save_path)]),
+            ("import", ["import", "-window", "root", str(save_path)]),
+            ("gnome-screenshot", ["gnome-screenshot", "-f", str(save_path)]),
+        ]:
+            if shutil.which(tool):
+                if self._run(args, timeout=8.0) is not None:
+                    activity_logger.log(f"Screenshot saved: {save_path}", category="SYS")
+                    return save_path
+                self._last_error = f"Tool '{tool}' could not capture the screen"
+
+        self._last_error = self._last_error or "No screenshot backend available"
         return None
 
     def lock_screen(self) -> bool:
@@ -120,6 +145,38 @@ class DesktopControlService:
         except Exception as exc:
             activity_logger.log(f"Clipboard fallback unavailable: {exc}", category="SYS", level="WARNING")
             return False
+
+    def clipboard_get(self) -> Optional[str]:
+        """Read the current clipboard content (cross-platform)."""
+        self._last_error = None
+
+        # Windows: pyautogui has no clipboard reader; use pyperclip
+        if self._system == "Windows":
+            try:
+                import pyperclip as pc
+                return pc.paste() or None
+            except Exception as exc:
+                self._last_error = str(exc)
+                return None
+
+        # Linux: prefer the native clipboard CLI tools for the active session
+        for tool, args in [
+            ("wl-paste", ["wl-paste", "--no-newline"]),
+            ("xclip", ["xclip", "-o", "-selection", "clipboard"]),
+            ("xsel", ["xsel", "-b", "-o"]),
+        ]:
+            if shutil.which(tool):
+                out = self._run(args, timeout=5.0)
+                if out is not None:
+                    return out
+                self._last_error = f"Tool '{tool}' could not read the clipboard"
+
+        try:
+            import pyperclip as pc
+            return pc.paste() or None
+        except Exception as exc:
+            self._last_error = str(exc)
+            return None
 
     def media_next(self) -> bool:
         """Next media track."""
@@ -215,16 +272,24 @@ class DesktopControlService:
             path = self.screenshot()
             result.update(
                 ok=path is not None,
-                message=f"Screenshot saved to {path}" if path else "Screenshot failed",
+                message=f"Screenshot saved to {path}" if path else (f"Screenshot failed: {self._last_error}" if self._last_error else "Screenshot failed"),
                 path=path,
+                error=self._last_error,
             )
         elif action == "lock":
             ok = self.lock_screen()
             result.update(ok=ok, message="Screen locked" if ok else "Unable to lock screen")
         elif action == "clipboard":
             text = payload.get("text", "")
-            ok = self.clipboard_set(text)
-            result.update(ok=ok, message="Clipboard updated" if ok else "Clipboard update failed")
+            if text:
+                ok = self.clipboard_set(text)
+                result.update(ok=ok, message="Clipboard updated" if ok else "Clipboard update failed")
+            else:
+                value = self.clipboard_get()
+                if value is None and self._last_error:
+                    result.update(ok=False, message=f"Clipboard read failed: {self._last_error}", error=self._last_error)
+                else:
+                    result.update(ok=True, text=value or "", message="Clipboard read" + ("" if value is not None else " (empty)"))
         elif action == "media_next":
             result.update(ok=self.media_next(), message="Next track")
         elif action == "media_play":

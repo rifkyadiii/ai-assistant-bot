@@ -1,5 +1,7 @@
 """Tests for VoiceService command parsing and execution."""
 
+import threading
+
 import pytest
 from src.services.voice_service import VoiceService
 
@@ -118,3 +120,15 @@ def test_clear_chat_parsing(voice_service_instance):
     assert res["ok"] is True
     assert res["command_type"] == "ui"
     assert res["action"] == "clear_chat"
+
+
+def test_stop_listening_clears_and_joins_thread(voice_service_instance):
+    finished = threading.Thread(target=lambda: None)
+    finished.start()
+    finished.join()
+
+    voice_service_instance._is_listening = True
+    voice_service_instance._listener_thread = finished
+    voice_service_instance.stop_listening()
+    assert voice_service_instance._is_listening is False
+    assert voice_service_instance._listener_thread is None

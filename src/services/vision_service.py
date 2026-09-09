@@ -331,7 +331,21 @@ class VisionService:
         cv2.putText(frame, f"MODE: {gesture}", (206, 34), cv2.FONT_HERSHEY_SIMPLEX, 0.42, g_color, 1, cv2.LINE_AA)
 
     def release(self) -> None:
-        """Free resources."""
+        """Free resources and reset cursor/gesture state."""
+        # Reset any in-progress click/drag so the OS cursor is never left held
+        if self._pyautogui:
+            try:
+                if self._is_dragging:
+                    self._pyautogui.mouseUp()
+            except Exception:
+                pass
+        self._is_clicking = False
+        self._is_dragging = False
+        self._prev_x = None
+        self._prev_y = None
+        self._pinch_start_time = 0.0
+        self._last_scroll_time = 0.0
+        self._last_click_time = 0.0
         if self._landmarker:
             try:
                 self._landmarker.close()

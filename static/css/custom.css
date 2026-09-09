@@ -69,20 +69,22 @@ input[type="range"].range-slider::-moz-range-thumb {
 
 .orb-container {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 336px;
+  height: 336px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  animation: orb-idle-float 6s ease-in-out infinite;
+  will-change: transform;
 }
 
 .orb-core {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.5), rgba(14, 116, 144, 0.4), rgba(6, 182, 212, 0.2));
   box-shadow:
@@ -160,22 +162,22 @@ input[type="range"].range-slider::-moz-range-thumb {
 }
 
 .orb-ring-1 {
-  width: 180px;
-  height: 180px;
+  width: 216px;
+  height: 216px;
   animation: orb-orbit-1 8s linear infinite;
   border-color: rgba(6, 182, 212, 0.15);
 }
 
 .orb-ring-2 {
-  width: 220px;
-  height: 220px;
+  width: 264px;
+  height: 264px;
   animation: orb-orbit-2 12s linear infinite;
   border-color: rgba(6, 182, 212, 0.1);
 }
 
 .orb-ring-3 {
-  width: 260px;
-  height: 260px;
+  width: 312px;
+  height: 312px;
   animation: orb-orbit-3 16s linear infinite;
   border-color: rgba(6, 182, 212, 0.06);
 }
@@ -216,8 +218,8 @@ input[type="range"].range-slider::-moz-range-thumb {
   bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
-  height: 40px;
+  width: 240px;
+  height: 48px;
   z-index: 5;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -298,6 +300,12 @@ input[type="range"].range-slider::-moz-range-thumb {
   0%, 100% { transform: scale(1); }
   30% { transform: scale(1.06); }
   60% { transform: scale(0.97); }
+}
+
+/* Gentle idle "breathing" float for ambient presence */
+@keyframes orb-idle-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.015); }
 }
 
 @keyframes orb-orbit-1 {
@@ -397,6 +405,19 @@ input[type="range"].range-slider::-moz-range-thumb {
   pointer-events: none;
 }
 
+.camera-float .camera-tab {
+  display: none;
+}
+
+/* Keep a persistent expand tab visible when the preview is minimized */
+.camera-float.collapsed .camera-tab {
+  display: flex;
+}
+
+.camera-float.collapsed .gesture-pill {
+  display: none;
+}
+
 .camera-float .camera-min-btn {
   transition: all 0.2s ease;
 }
@@ -413,6 +434,10 @@ input[type="range"].range-slider::-moz-range-thumb {
   position: fixed;
   inset: 0;
   z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
   background: rgba(9, 9, 11, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -430,8 +455,12 @@ input[type="range"].range-slider::-moz-range-thumb {
   transform: translateY(0);
 }
 
+.control-bar-shell {
+  max-height: calc(100dvh - 2rem);
+}
+
 .control-bar-scroll {
-  max-height: 100vh;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -442,17 +471,17 @@ input[type="range"].range-slider::-moz-range-thumb {
 .chat-panel {
   transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 0.3s ease;
-  max-height: 320px;
+  max-height: 480px;
   overflow: hidden;
 }
 
+/* Collapsed keeps the slim header (with the expand button) visible */
 .chat-panel.collapsed {
-  max-height: 0;
-  opacity: 0;
+  max-height: 44px;
 }
 
 .chat-messages {
-  max-height: 260px;
+  max-height: min(42vh, 320px);
   overflow-y: auto;
 }
 
@@ -562,22 +591,61 @@ input[type="range"].range-slider::-moz-range-thumb {
 }
 
 /* ==========================================
+   Microphone Consent Overlay
+   ========================================== */
+
+#micConsentOverlay {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#micConsentOverlay:not(.hidden) {
+  display: flex;
+}
+
+/* ==========================================
    Responsive Orb Sizing
    ========================================== */
 
+/* Pause decorative animation when the tab is hidden (CPU/GPU savings) */
+.anim-paused .orb-ring,
+.anim-paused .orb-glow-inner,
+.anim-paused .orb-particle,
+.anim-paused .orb-core,
+.anim-paused .wake-indicator.active {
+  animation-play-state: paused !important;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .orb-container,
+  .orb-ring,
+  .orb-glow-inner,
+  .orb-particle,
+  .orb-core,
+  .speaking-dots span,
+  .wake-indicator.active {
+    animation: none !important;
+  }
+  .orb-waveform {
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   .orb-container {
-    width: 210px;
-    height: 210px;
+    width: 240px;
+    height: 240px;
   }
   .orb-core {
-    width: 105px;
-    height: 105px;
+    width: 120px;
+    height: 120px;
   }
-  .orb-ring-1 { width: 140px; height: 140px; }
-  .orb-ring-2 { width: 170px; height: 170px; }
-  .orb-ring-3 { width: 200px; height: 200px; }
-  .orb-waveform { width: 160px; height: 32px; }
+  .orb-ring-1 { width: 160px; height: 160px; }
+  .orb-ring-2 { width: 192px; height: 192px; }
+  .orb-ring-3 { width: 224px; height: 224px; }
+  .orb-waveform { width: 180px; height: 36px; }
   .camera-float .camera-frame {
     width: 200px;
   }

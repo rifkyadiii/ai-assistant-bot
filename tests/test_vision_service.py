@@ -28,3 +28,23 @@ def test_process_blank_frame(vision_service_instance):
     assert out_frame.shape == (480, 640, 3)
     assert meta["hand_detected"] is False
     assert meta["gesture"] == "NO_HAND"
+
+
+def test_release_resets_cursor_and_gesture_state(vision_service_instance):
+    vision_service_instance._is_clicking = True
+    vision_service_instance._is_dragging = True
+    vision_service_instance._prev_x = 320.0
+    vision_service_instance._prev_y = 240.0
+    vision_service_instance._pinch_start_time = 123.0
+    vision_service_instance._last_scroll_time = 456.0
+    vision_service_instance._last_click_time = 789.0
+
+    vision_service_instance.release()
+
+    assert vision_service_instance._is_clicking is False
+    assert vision_service_instance._is_dragging is False
+    assert vision_service_instance._prev_x is None
+    assert vision_service_instance._prev_y is None
+    assert vision_service_instance._pinch_start_time == 0.0
+    assert vision_service_instance._last_scroll_time == 0.0
+    assert vision_service_instance._last_click_time == 0.0

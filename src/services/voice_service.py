@@ -479,6 +479,10 @@ class VoiceService:
         """Stop the background listener thread."""
         self._is_listening = False
         self._stop_listener_event.set()
+        if self._listener_thread and self._listener_thread.is_alive():
+            # The loop can be blocked in listen_once (up to VOICE_TIMEOUT); wait briefly
+            self._listener_thread.join(timeout=2.0)
+        self._listener_thread = None
         activity_logger.log("Background voice listener stopped", category="VOICE")
 
     def toggle_listening(self) -> bool:
