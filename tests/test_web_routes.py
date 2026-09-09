@@ -21,6 +21,15 @@ def test_index_route(client):
     assert "VoiceBot OS" in html
     assert 'rel="manifest"' in html
     assert "tailwindcss" in html
+    # New interface layout elements
+    assert 'id="orbContainer"' in html
+    assert 'id="chatPanel"' in html
+    assert 'id="chatMessages"' in html
+    assert 'id="cameraFloat"' in html
+    assert 'id="hamburgerBtn"' in html
+    assert 'id="controlBar"' in html
+    assert 'id="chatInput"' in html
+    assert 'id="wakeWordToggle"' in html
 
 
 def test_manifest_route(client):

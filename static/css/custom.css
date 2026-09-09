@@ -370,3 +370,215 @@ input[type="range"].range-slider::-moz-range-thumb {
 ::-webkit-scrollbar-thumb:hover {
   background: #71717a;
 }
+
+/* ==========================================
+   Floating Camera Preview (upper-right)
+   ========================================== */
+
+.camera-float {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 40;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.camera-float .camera-frame {
+  width: 288px;
+  max-width: 40vw;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.camera-float.collapsed .camera-frame {
+  width: 0;
+  max-width: 0;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+
+.camera-float .camera-min-btn {
+  transition: all 0.2s ease;
+}
+
+.camera-float.collapsed .camera-min-btn {
+  border-radius: 50%;
+}
+
+/* ==========================================
+   Fullscreen Control Bar
+   ========================================== */
+
+.control-bar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(9, 9, 11, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(24px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.3s;
+}
+
+.control-bar-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.control-bar-scroll {
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+/* ==========================================
+   Transcript Chat Panel
+   ========================================== */
+
+.chat-panel {
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.chat-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.chat-messages {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.9rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-bubble-user {
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #e0f2fe;
+  border-bottom-right-radius: 0.3rem;
+}
+
+.chat-bubble-assistant {
+  background: rgba(39, 39, 42, 0.7);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  color: #d4d4d8;
+  border-bottom-left-radius: 0.3rem;
+}
+
+.chat-bubble-assistant.speaking {
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.15);
+}
+
+/* Speaking indicator dots */
+.speaking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+}
+.speaking-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a855f7;
+  animation: speaking-dot-bounce 0.9s infinite ease-in-out;
+}
+.speaking-dots span:nth-child(2) { animation-delay: 0.15s; }
+.speaking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes speaking-dot-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ==========================================
+   Chat Input Bar
+   ========================================== */
+
+.chat-input-bar {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+.chat-input-bar.expanded {
+  max-height: 70px;
+  opacity: 1;
+}
+
+/* ==========================================
+   Hamburger Button (upper-left)
+   ========================================== */
+
+.hamburger-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 50;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.hamburger-btn:hover {
+  transform: scale(1.05);
+}
+
+.hamburger-btn:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================
+   Wake Word Indicator
+   ========================================== */
+
+.wake-indicator {
+  transition: all 0.3s ease;
+}
+
+.wake-indicator.active {
+  animation: wake-pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes wake-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* ==========================================
+   Responsive Orb Sizing
+   ========================================== */
+
+@media (max-width: 640px) {
+  .orb-container {
+    width: 210px;
+    height: 210px;
+  }
+  .orb-core {
+    width: 105px;
+    height: 105px;
+  }
+  .orb-ring-1 { width: 140px; height: 140px; }
+  .orb-ring-2 { width: 170px; height: 170px; }
+  .orb-ring-3 { width: 200px; height: 200px; }
+  .orb-waveform { width: 160px; height: 32px; }
+  .camera-float .camera-frame {
+    width: 200px;
+  }
+}

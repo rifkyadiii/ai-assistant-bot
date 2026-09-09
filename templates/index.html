@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>VoiceBot OS — Multimodal Voice & Gesture Console</title>
+  <title>VoiceBot OS — Multimodal Voice &amp; Gesture Console</title>
 
   <!-- PWA & Mobile Meta Tags -->
   <link rel="manifest" href="/manifest.json">
@@ -39,324 +39,249 @@
 </head>
 <body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-cyan-500 selection:text-white flex flex-col font-sans">
 
-  <!-- Top Header Navigation -->
-  <header class="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl px-4 lg:px-8 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-        </svg>
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-base font-bold tracking-tight text-white">VoiceBot OS</h1>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-500/30">v3.0</span>
-        </div>
-        <p class="text-[11px] text-zinc-400">Fluid AI Voice & Gesture Control</p>
-      </div>
-    </div>
+  <!-- Hamburger Button (upper-left) -->
+  <button id="hamburgerBtn" onclick="toggleControlBar()" aria-label="Open controls"
+          class="hamburger-btn w-10 h-10 rounded-xl bg-zinc-900/80 backdrop-blur-md border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white hover:border-zinc-600">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
 
-    <div class="hidden sm:flex items-center gap-2.5">
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800 text-zinc-300">
-        <span id="connectionDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="connectionText">System Online</span>
-      </div>
-
-      <div id="pwaModeBadge" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-950/70 border border-indigo-500/40 text-indigo-300">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>Native App</span>
-      </div>
-
-      <button onclick="toggleServerVoiceListener()" id="serverVoiceStatusPill" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800/80 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer">
-        Server Mic: IDLE
-      </button>
-
-      <button onclick="toggleDesktopCursorControl()" id="cursorStatusPill" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800/80 border border-zinc-700/60 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer">
-        Cursor: VIEW ONLY
-      </button>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <button id="installAppBtn" onclick="triggerInstallPrompt()" class="hidden items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/25 transition-all">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        <span>Install App</span>
-      </button>
-      <button onclick="refreshStatus(); refreshLogs();" title="Refresh Telemetry" class="p-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Content Dashboard -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-    <!-- Left Column (8 cols) -->
-    <div class="lg:col-span-8 flex flex-col gap-6">
-
-      <!-- 1. Hand Tracking Camera -->
-      <section id="camera-section" class="glass-panel rounded-2xl p-5 border border-zinc-800/80 overflow-hidden">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>
-            <h2 class="text-sm font-semibold tracking-wide text-zinc-200 uppercase">Hand Gesture Vision</h2>
-          </div>
-          <div class="flex items-center gap-2">
-            <span id="gesturePill" class="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-900/80 border border-zinc-700/50 text-zinc-400">
-              Searching Hand...
-            </span>
-          </div>
-        </div>
-
-        <div class="relative w-full aspect-video bg-zinc-900/90 rounded-xl overflow-hidden border border-zinc-800 shadow-inner group">
-          <img id="cameraVideoFeed" src="/video_feed" alt="Webcam hand landmark feed" class="w-full h-full object-cover">
-          <div class="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-widest bg-rose-950/80 border border-rose-500/50 text-rose-300 backdrop-blur-md">LIVE</span>
-          </div>
-          <div class="absolute bottom-3 right-3 flex items-center gap-2">
-            <button onclick="toggleCameraFeed()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-950/80 border border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-900 backdrop-blur-md transition-all flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              <span>Toggle Cam</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="cursorControlToggle" onchange="toggleDesktopCursorControl()" class="sr-only peer">
-              <div class="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-            <div>
-              <div class="text-xs font-medium text-zinc-200">Move Mouse with Hand</div>
-              <div class="text-[11px] text-zinc-400">Real-time OS cursor control</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 text-[11px] text-zinc-400 flex-wrap">
-            <span class="px-2 py-1 rounded bg-zinc-900/90 border border-zinc-800 flex items-center gap-1">
-              <strong class="text-cyan-400">Point:</strong> Move
-            </span>
-            <span class="px-2 py-1 rounded bg-zinc-900/90 border border-zinc-800 flex items-center gap-1">
-              <strong class="text-emerald-400">Pinch:</strong> Click
-            </span>
-            <span class="px-2 py-1 rounded bg-zinc-900/90 border border-zinc-800 flex items-center gap-1">
-              <strong class="text-emerald-600">Hold:</strong> Drag
-            </span>
-            <span class="px-2 py-1 rounded bg-zinc-900/90 border border-zinc-800 flex items-center gap-1">
-              <strong class="text-indigo-400">Middle:</strong> Scroll
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. FLUID ORB — Interactive Voice Assistant -->
-      <section id="voice-section" class="glass-panel rounded-2xl p-6 border border-zinc-800/80">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-2.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
-            <h2 class="text-sm font-semibold tracking-wide text-zinc-200 uppercase">AI Voice Assistant</h2>
-          </div>
-          <span id="voiceStatusLabel" class="text-xs text-zinc-400 font-medium">
-            Tap the orb to speak
+  <!-- Floating Camera Preview (upper-right, expanded by default) -->
+  <div id="cameraFloat" class="camera-float">
+    <div class="camera-frame rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md shadow-xl shadow-black/40">
+      <div class="flex items-center justify-between px-2.5 py-1.5 bg-zinc-900/90 border-b border-zinc-800">
+        <span class="text-[10px] font-bold tracking-widest uppercase text-zinc-400 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+          Camera
+          <span id="cameraStatusBadge" class="text-[11px] font-semibold text-cyan-300">ON</span>
+        </span>
+        <button onclick="toggleCameraPanel()" id="cameraMinToggle" aria-label="Minimize camera"
+                class="camera-min-btn w-6 h-6 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300">
+          <span id="cameraMinBtnIcon">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/></svg>
           </span>
+        </button>
+      </div>
+      <img id="cameraVideoFeed" src="/video_feed" alt="Camera preview"
+           class="w-full h-40 sm:h-44 object-cover bg-black">
+      <div class="flex items-center justify-between px-2.5 py-2 bg-zinc-900/90 border-t border-zinc-800 gap-1">
+        <span id="cursorStatusPill" class="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold border bg-zinc-900/80 border-zinc-700 text-zinc-400">
+          <span id="cursorControlStatusBadge" class="text-[11px] font-semibold text-zinc-500">VIEW ONLY</span>
+        </span>
+        <button onclick="toggleDesktopCursorControl()" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-cyan-300 transition-colors">
+          Cursor Control
+        </button>
+      </div>
+    </div>
+    <div id="gesturePill" class="absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-md bg-zinc-900/80 border-zinc-700/50 text-zinc-400 whitespace-nowrap shadow-lg">Searching Hand...</div>
+  </div>
+
+  <!-- Main Viewport -->
+  <main class="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-4 pt-16 pb-8">
+
+    <!-- Status Readout (minimal) -->
+    <div class="flex items-center gap-2 mb-2 text-[11px] text-zinc-500">
+      <span class="w-2 h-2 rounded-full" id="connectionDot"></span>
+      <span id="connectionText">System Online</span>
+    </div>
+
+    <!-- Fluid Orb Centerpiece -->
+    <div id="orbContainer" class="orb-container" role="button" tabindex="0"
+         onclick="toggleOrbInteraction()" aria-label="Tap to speak to VoiceBot">
+      <div class="orb-ring orb-ring-1"></div>
+      <div class="orb-ring orb-ring-2"></div>
+      <div class="orb-ring orb-ring-3"></div>
+      <div class="orb-glow-inner"></div>
+      <div class="orb-particle" style="top:18%;left:70%"></div>
+      <div class="orb-particle" style="top:75%;left:22%"></div>
+      <div class="orb-particle" style="top:30%;left:12%"></div>
+      <div class="orb-particle" style="top:80%;left:78%"></div>
+      <div class="orb-particle" style="top:12%;left:42%"></div>
+      <div class="orb-particle" style="top:60%;left:88%"></div>
+      <div class="orb-core"></div>
+      <canvas id="orbWaveform" class="orb-waveform" width="200" height="40"></canvas>
+      <div class="orb-status text-xs font-semibold tracking-widest uppercase">
+        <span id="orbStatusText" class="text-zinc-400">Ready</span>
+      </div>
+    </div>
+
+    <!-- Voice Transcript + Status Line -->
+    <div class="mt-8 flex flex-col items-center gap-1 px-4 text-center">
+      <p id="voiceTranscriptText" class="text-xs text-zinc-400 italic max-w-xl truncate">Tap the orb and speak a command...</p>
+      <p id="voiceStatusLabel" class="text-[10px] uppercase tracking-widest text-zinc-600">Tap the orb to speak</p>
+    </div>
+
+    <!-- Wake Word Pill -->
+    <div id="wakePill" class="wake-indicator hidden mt-3 px-3 py-1 rounded-full text-[11px] font-bold border border-rose-500/50 bg-rose-950/70 text-rose-300 shadow-lg">
+      "Hey Sobot" — Listening for your voice
+    </div>
+
+    <!-- Voice Result Banner -->
+    <div id="voiceResultBanner" class="hidden mt-3 w-full max-w-md px-4 py-2 rounded-xl glass-panel border border-zinc-700/60 text-center">
+      <p id="voiceResultMsg" class="text-xs text-zinc-300"></p>
+    </div>
+
+    <!-- Transcript Chat Panel -->
+    <section id="chatPanel" class="chat-panel w-full mt-6 rounded-2xl glass-panel border border-zinc-800/70 flex flex-col">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/70">
+        <div class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5M21 12a9 9 0 11-6.2-8.6"/></svg>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-zinc-400">Transcript Chat</h2>
         </div>
-
-        <!-- The Fluid Orb -->
-        <div class="flex flex-col items-center gap-6">
-          <div id="orbContainer" class="orb-container" onclick="toggleOrbInteraction()" role="button" aria-label="Voice assistant orb - tap to speak" tabindex="0">
-            <!-- Orb rings -->
-            <div class="orb-ring orb-ring-1"></div>
-            <div class="orb-ring orb-ring-2"></div>
-            <div class="orb-ring orb-ring-3"></div>
-
-            <!-- Floating particles -->
-            <div class="orb-particle" style="top: 15%; left: 10%; animation-delay: 0s;"></div>
-            <div class="orb-particle" style="top: 25%; right: 8%; animation-delay: 0.8s;"></div>
-            <div class="orb-particle" style="bottom: 20%; left: 15%; animation-delay: 1.6s;"></div>
-            <div class="orb-particle" style="bottom: 30%; right: 12%; animation-delay: 2.4s;"></div>
-            <div class="orb-particle" style="top: 40%; left: 5%; animation-delay: 0.4s;"></div>
-            <div class="orb-particle" style="top: 50%; right: 5%; animation-delay: 1.2s;"></div>
-
-            <!-- Inner glow -->
-            <div class="orb-glow-inner"></div>
-
-            <!-- Core orb -->
-            <div class="orb-core" id="orbCore"></div>
-
-            <!-- Waveform canvas -->
-            <canvas id="orbWaveform" class="orb-waveform" width="200" height="40"></canvas>
-          </div>
-
-          <!-- Orb status label -->
-          <div class="orb-status">
-            <div id="orbStatusText" class="text-sm font-medium text-cyan-400 mb-1">Ready</div>
-            <div id="orbTranscriptText" class="text-xs text-zinc-500 max-w-xs truncate">Tap orb or say a command</div>
-          </div>
-
-          <!-- Transcript display -->
-          <div class="w-full max-w-lg">
-            <div id="voiceTranscriptText" class="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-sm text-zinc-300 min-h-[46px] flex items-center justify-center italic text-center">
-              Say "Volume up", "Brightness 70%", "Search black holes"...
-            </div>
-          </div>
-
-          <!-- Voice Result Banner -->
-          <div id="voiceResultBanner" class="hidden w-full max-w-lg p-3 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-xs text-indigo-200 flex items-center gap-2">
-            <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span id="voiceResultMsg">Command executed</span>
-          </div>
-
-          <!-- Quick Voice Command Chips -->
-          <div class="w-full max-w-lg">
-            <div class="text-[11px] text-zinc-500 font-medium mb-2 text-center">Quick Commands</div>
-            <div class="flex flex-wrap gap-2 justify-center">
-              <button onclick="executeVoiceCommand('volume up')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-cyan-400 text-zinc-300 transition-colors">Volume Up</button>
-              <button onclick="executeVoiceCommand('volume down')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-cyan-400 text-zinc-300 transition-colors">Volume Down</button>
-              <button onclick="executeVoiceCommand('set volume to 75%')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-cyan-400 text-zinc-300 transition-colors">75% Volume</button>
-              <button onclick="executeVoiceCommand('mute')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-rose-400 text-zinc-300 transition-colors">Mute</button>
-              <button onclick="executeVoiceCommand('brightness up')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-amber-400 text-zinc-300 transition-colors">Brightness Up</button>
-              <button onclick="executeVoiceCommand('set brightness to 80%')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-amber-400 text-zinc-300 transition-colors">80% Brightness</button>
-              <button onclick="executeVoiceCommand('toggle cursor')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-emerald-400 text-zinc-300 transition-colors">Toggle Cursor</button>
-              <button onclick="executeVoiceCommand('search what is the speed of light')" class="px-2.5 py-1 rounded-lg text-xs bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-purple-400 text-zinc-300 transition-colors">Search</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. Gemini AI Search -->
-      <section class="glass-panel rounded-2xl p-5 border border-zinc-800/80">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-            <h2 class="text-sm font-semibold tracking-wide text-zinc-200 uppercase">Gemini AI Search</h2>
-          </div>
-          <div id="searchResponseSource" class="text-[11px] font-mono text-zinc-400">Gemini Flash</div>
-        </div>
-
-        <div class="flex gap-2">
-          <div class="relative flex-1">
-            <input type="text" id="searchInput" placeholder="Ask Gemini anything..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-all">
-            <svg class="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          </div>
-          <button id="searchSubmitBtn" onclick="doGeminiSearch()" class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-md shadow-cyan-600/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span id="searchSpinner" class="hidden w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span id="searchBtnText">Search</span>
+        <div class="flex items-center gap-1.5">
+          <button onclick="clearChat()" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 transition-colors">Clear</button>
+          <button onclick="toggleChatPanel()" aria-label="Collapse chat" class="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
           </button>
         </div>
+      </div>
+      <div id="chatMessages" class="chat-messages flex flex-col gap-2 p-4" aria-live="polite"></div>
 
-        <div id="searchResponseCard" class="hidden mt-4 p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-          <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2 mb-3">
-            <span id="searchResponseQuery" class="text-xs font-medium text-cyan-400 truncate max-w-[70%]"></span>
-            <div class="flex items-center gap-2">
-              <button onclick="speakSearchResponse()" title="Read aloud" class="p-1 rounded text-zinc-400 hover:text-zinc-200">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 4.663 12 5.109 12 6v12c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
-              </button>
-              <button onclick="copySearchResponse()" title="Copy" class="p-1 rounded text-zinc-400 hover:text-zinc-200">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-              </button>
-            </div>
+      <!-- Collapsed trigger for chat input -->
+      <div class="px-4 py-2.5 border-t border-zinc-800/70">
+        <button onclick="expandChatInput()" id="chatInputToggle"
+                class="w-full px-3 py-2 rounded-xl text-xs text-zinc-400 text-left bg-zinc-900/70 border border-dashed border-zinc-700/70 hover:border-cyan-500/50 hover:text-cyan-300 transition-colors">
+          Send a typed message or voice command...
+        </button>
+      </div>
+
+      <!-- Expanded chat input bar -->
+      <div id="chatInputBar" class="chat-input-bar">
+        <form class="px-4 pb-4" onsubmit="event.preventDefault(); sendChatMessage();">
+          <div class="flex items-center gap-2">
+            <input id="chatInput" type="text" autocomplete="off" placeholder="Type a command or question..."
+                   class="flex-1 px-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-700 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/40 transition-all">
+            <button type="button" onclick="collapseChatInput()" aria-label="Collapse input"
+                    class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <button type="submit" aria-label="Send message"
+                    class="w-10 h-10 rounded-xl bg-cyan-600 hover:bg-cyan-500 border border-cyan-400/40 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            </button>
           </div>
-          <div id="searchResponseText" class="text-xs sm:text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap"></div>
-        </div>
+        </form>
+      </div>
+    </section>
+  </main>
 
-        <div class="mt-3 flex items-center gap-2 flex-wrap">
-          <span class="text-[11px] text-zinc-500">Recent:</span>
-          <div id="searchHistoryChips" class="flex items-center gap-1.5 flex-wrap"></div>
-        </div>
-      </section>
+  <!-- Fullscreen Control Bar -->
+  <div id="controlBar" class="control-bar-overlay flex items-start justify-center overflow-y-auto" aria-label="Control bar">
+    <div class="flex flex-col items-end gap-2 p-4 w-full max-w-md">
+      <button onclick="closeControlBar()" aria-label="Close controls"
+              class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <p class="text-[10px] uppercase tracking-widest text-zinc-500 -mt-2 w-full max-w-md">VoiceBot OS — Controls</p>
     </div>
 
-    <!-- Right Column (4 cols) -->
-    <div id="controls-section" class="lg:col-span-4 flex flex-col gap-6">
+    <div class="control-bar-scroll w-full max-w-md px-4 pb-16 -mt-14 pt-8">
+      <!-- Connection / PWA Status -->
+      <div class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs text-zinc-300">System Online</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="pwaModeBadge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">STANDALONE</span>
+          <button id="installAppBtn" onclick="triggerInstallPrompt()" class="hidden px-2 py-1.5 rounded-lg text-[10px] font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-cyan-300 transition-colors">Install App</button>
+        </div>
+      </div>
 
-      <!-- Volume -->
-      <section class="glass-panel rounded-2xl p-5 border border-zinc-800/80">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <svg id="volumeIcon" class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 4.663 12 5.109 12 6v12c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-            </svg>
-            <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-300">System Volume</h3>
-          </div>
-          <span id="volumeValue" class="text-sm font-extrabold text-cyan-400 font-mono">50%</span>
+      <!-- Voice Controls -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Voice Controls</h3>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="toggleOrbInteraction()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-red-600/20 border border-red-500/40 text-red-300 hover:bg-red-600/30 transition-colors">Speak Now</button>
+          <button id="serverVoiceStatusPill" onclick="toggleServerVoiceListener()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">
+            Server Mic <span id="serverMicStatusBadge" class="text-[11px] font-semibold text-zinc-500">IDLE</span>
+          </button>
+          <button id="wakeWordToggle" onclick="toggleWakeWord()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">
+            Wake Word <span id="wakeWordStatus" class="text-[11px] font-semibold text-zinc-500">OFF</span>
+          </button>
         </div>
-        <div class="flex items-center gap-2.5 my-3">
-          <button onclick="adjustVolumeStep(-5)" class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 flex items-center justify-center text-sm font-bold active:scale-95 transition-all">-</button>
-          <input type="range" id="volumeSlider" min="0" max="100" value="50" oninput="handleVolumeSlider(this.value)" class="range-slider flex-1">
-          <button onclick="adjustVolumeStep(5)" class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 flex items-center justify-center text-sm font-bold active:scale-95 transition-all">+</button>
-        </div>
-        <div class="flex items-center justify-between gap-1.5 mt-3 pt-3 border-t border-zinc-800/80">
+        <p class="mt-2.5 text-[10px] text-zinc-500">Enable "Hey Sobot" for hands-free activation of every command.</p>
+      </section>
+
+      <!-- Volume Control -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400">Volume</h3>
           <button id="muteToggleBtn" onclick="toggleMute()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 hover:bg-zinc-700 transition-colors">
             <span id="muteBtnText">Mute</span>
           </button>
-          <div class="flex items-center gap-1">
-            <button onclick="handleVolumeSlider(25)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">25%</button>
-            <button onclick="handleVolumeSlider(50)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">50%</button>
-            <button onclick="handleVolumeSlider(75)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">75%</button>
-            <button onclick="handleVolumeSlider(100)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">100%</button>
-          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg id="volumeIcon" class="w-5 h-5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 4.663 12 5.109 12 6v12c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+          </svg>
+          <input id="volumeSlider" type="range" min="0" max="100" value="50" class="range-slider flex-1" oninput="handleVolumeSlider(this.value)">
+          <span id="volumeValue" class="text-xs font-mono text-zinc-300 w-10 text-right shrink-0">50%</span>
+        </div>
+        <div class="flex items-center gap-2 mt-2.5 flex-wrap">
+          <button onclick="adjustVolumeStep(-5)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">-5</button>
+          <button onclick="adjustVolumeStep(5)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">+5</button>
+          <button onclick="handleVolumeSlider(25)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">25</button>
+          <button onclick="handleVolumeSlider(50)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">50</button>
+          <button onclick="handleVolumeSlider(75)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">75</button>
+          <button onclick="handleVolumeSlider(100)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">100</button>
         </div>
       </section>
 
-      <!-- Brightness -->
-      <section class="glass-panel rounded-2xl p-5 border border-zinc-800/80">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-            <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-300">Display Brightness</h3>
-          </div>
-          <span id="brightnessValue" class="text-sm font-extrabold text-amber-400 font-mono">50%</span>
+      <!-- Brightness Control -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-2">Brightness</h3>
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <input id="brightnessSlider" type="range" min="0" max="100" value="50" class="range-slider flex-1" oninput="handleBrightnessSlider(this.value)">
+          <span id="brightnessValue" class="text-xs font-mono text-zinc-300 w-10 text-right shrink-0">50%</span>
         </div>
-        <div class="flex items-center gap-2.5 my-3">
-          <button onclick="adjustBrightnessStep(-5)" class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 flex items-center justify-center text-sm font-bold active:scale-95 transition-all">-</button>
-          <input type="range" id="brightnessSlider" min="0" max="100" value="50" oninput="handleBrightnessSlider(this.value)" class="range-slider flex-1">
-          <button onclick="adjustBrightnessStep(5)" class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 flex items-center justify-center text-sm font-bold active:scale-95 transition-all">+</button>
-        </div>
-        <div class="flex items-center justify-end gap-1.5 mt-3 pt-3 border-t border-zinc-800/80">
-          <button onclick="handleBrightnessSlider(20)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">20%</button>
-          <button onclick="handleBrightnessSlider(50)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">50%</button>
-          <button onclick="handleBrightnessSlider(80)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">80%</button>
-          <button onclick="handleBrightnessSlider(100)" class="px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400">Max</button>
+        <div class="flex items-center gap-2 mt-2.5 flex-wrap">
+          <button onclick="adjustBrightnessStep(-5)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">-5</button>
+          <button onclick="adjustBrightnessStep(5)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">+5</button>
+          <button onclick="handleBrightnessSlider(20)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">20</button>
+          <button onclick="handleBrightnessSlider(50)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">50</button>
+          <button onclick="handleBrightnessSlider(80)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">80</button>
+          <button onclick="handleBrightnessSlider(100)" class="px-2.5 py-1.5 rounded-lg text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">100</button>
         </div>
       </section>
 
-      <!-- Desktop Controls (for full computer control) -->
-      <section class="glass-panel rounded-2xl p-5 border border-zinc-800/80">
-        <div class="flex items-center gap-2.5 mb-3">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-          <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-300">Desktop Control</h3>
+      <!-- Camera Controls -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Camera &amp; Gestures</h3>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="toggleCameraFeed()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-cyan-300 hover:bg-zinc-700 transition-colors">Camera ON/OFF</button>
+          <button onclick="toggleCameraPanel()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-cyan-300 hover:bg-zinc-700 transition-colors">Show/Hide Preview</button>
+          <button onclick="toggleDesktopCursorControl()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-emerald-300 hover:bg-zinc-700 transition-colors">Cursor Control</button>
         </div>
-        <div class="grid grid-cols-3 gap-2">
-          <button onclick="desktopAction('screenshot')" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-cyan-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <span class="text-[10px]">Screenshot</span>
-          </button>
-          <button onclick="desktopAction('lock')" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            <span class="text-[10px]">Lock</span>
-          </button>
-          <button onclick="desktopAction('clipboard')" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-purple-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            <span class="text-[10px]">Clipboard</span>
-          </button>
-          <button onclick="desktopAction('media_next')" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-emerald-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-            <span class="text-[10px]">Media</span>
-          </button>
-          <button onclick="desktopAction('open_app', { app: 'email' })" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-sky-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            <span class="text-[10px]">Email</span>
-          </button>
-          <button onclick="desktopAction('open_app', { app: 'browser' })" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-rose-400 transition-all flex flex-col items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-            <span class="text-[10px]">Browser</span>
-          </button>
+        <p class="mt-2.5 text-[10px] text-zinc-500">Point to move the cursor, pinch to click, middle finger to scroll.</p>
+      </section>
+
+      <!-- Desktop Actions -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-3">Desktop</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="desktopAction('screenshot')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Screenshot</button>
+          <button onclick="desktopAction('lock')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Lock Screen</button>
+          <button onclick="desktopAction('clipboard')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Clipboard</button>
+          <button onclick="desktopAction('media_next')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Media Next</button>
+          <button onclick="desktopAction('open_app', { app: 'browser' })" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Open Browser</button>
+          <button onclick="desktopAction('open_app', { app: 'email' })" class="px-3 py-2 rounded-xl text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors">Open Email</button>
         </div>
+      </section>
+
+      <!-- Quick Voice Search -->
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 mb-3">
+        <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-400 mb-2">AI Search</h3>
+        <button onclick="executeVoiceCommand('search what is the speed of light')"
+                class="w-full px-3 py-2.5 rounded-xl text-xs font-semibold bg-amber-600/15 border border-amber-500/30 text-amber-300 hover:bg-amber-600/25 transition-colors">
+          Ask: "What is the speed of light?"
+        </button>
       </section>
 
       <!-- Activity Log -->
-      <section class="glass-panel rounded-2xl p-5 border border-zinc-800/80 flex flex-col h-[300px]">
+      <section class="glass-panel rounded-2xl p-4 border border-zinc-800/80 flex flex-col h-[240px]">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
             <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -366,9 +291,8 @@
         </div>
         <div id="activityLogBox" class="flex-1 overflow-y-auto p-3 rounded-xl bg-zinc-950/90 border border-zinc-900 font-mono flex flex-col gap-1 select-text"></div>
       </section>
-
     </div>
-  </main>
+  </div>
 
   <!-- Toast Notifications -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>

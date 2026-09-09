@@ -26,6 +26,8 @@ VOICE_TIMEOUT: Final[int] = int(os.getenv("VOICE_TIMEOUT", "5"))
 VOICE_PHRASE_LIMIT: Final[int] = int(os.getenv("VOICE_PHRASE_LIMIT", "10"))
 VOICE_LANGUAGE: Final[str] = os.getenv("VOICE_LANGUAGE", "en-US")
 VOICE_BACKGROUND_ENABLED: Final[bool] = os.getenv("VOICE_BACKGROUND_ENABLED", "false").lower() in ("true", "1", "yes")
+# Wake word phrase to activate the assistant hands-free (e.g. "Hey Sobot")
+WAKE_PHRASE: Final[str] = os.getenv("WAKE_PHRASE", "hey sobot")
 
 # Hand Tracking & Gesture Settings
 HAND_DETECTION_CONFIDENCE: Final[float] = float(os.getenv("HAND_DETECTION_CONFIDENCE", "0.7"))
@@ -96,4 +98,12 @@ COMMANDS: Final[dict[str, list[str]]] = {
     "media_next": ["next song", "next track", "skip song", "skip track"],
     "media_previous": ["previous song", "previous track", "go back a song"],
     "copy_clipboard": ["copy this", "copy to clipboard", "copy text"],
+    # Interface navigation commands (mostly handled client-side)
+    "camera_show": ["show camera", "open camera", "start camera", "enable camera"],
+    "camera_hide": ["hide camera", "close camera", "stop camera", "disable camera"],
+    "chat_show": ["show chat", "open chat", "show transcript", "open transcript"],
+    "chat_hide": ["hide chat", "close chat", "hide transcript", "close transcript"],
+    "open_settings": ["open settings", "open controls", "show settings", "show controls", "open menu"],
+    "close_settings": ["close settings", "close controls", "hide settings", "hide controls", "close menu"],
+    "clear_chat": ["clear chat", "clear messages", "clear transcript", "clear conversation"],
 }

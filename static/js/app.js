@@ -18,7 +18,14 @@ const state = {
   isRecordingWebSpeech: false,
   deferredInstallPrompt: null,
   isStandalone: false,
-  lastGesture: 'NO_HAND'
+  lastGesture: 'NO_HAND',
+  chatMessages: [],
+  chatExpanded: true,
+  chatInputExpanded: false,
+  cameraExpanded: true,
+  controlBarOpen: false,
+  wakeWordEnabled: false,
+  wakeWordListening: false
 };
 
 // ==========================================
@@ -163,6 +170,14 @@ async function refreshStatus() {
   renderBrightnessUI();
   renderCameraUI(data.gesture_telemetry);
   renderVoiceStateUI();
+  renderCameraStatusBadge();
+}
+
+function renderCameraStatusBadge() {
+  const badge = document.getElementById('cameraStatusBadge');
+  if (!badge) return;
+  badge.textContent = state.cameraActive ? 'ON' : 'OFF';
+  badge.className = 'text-[11px] font-semibold ' + (state.cameraActive ? 'text-cyan-300' : 'text-zinc-500');
 }
 
 function updateOnlineBadge(isOnline) {
@@ -288,22 +303,22 @@ async function adjustBrightnessStep(step) {
 // Camera & Hand Gesture Controls
 // ==========================================
 function renderCameraUI(telemetry) {
-  const cursorToggle = document.getElementById('cursorControlToggle');
   const cursorPill = document.getElementById('cursorStatusPill');
+  const cursorBadge = document.getElementById('cursorControlStatusBadge');
   const gestureBadge = document.getElementById('gesturePill');
 
-  if (cursorToggle) {
-    cursorToggle.checked = state.cursorEnabled;
-  }
-
-  if (cursorPill) {
+  if (cursorBadge) {
     if (state.cursorEnabled) {
-      cursorPill.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300';
-      cursorPill.textContent = 'Cursor Control: ACTIVE';
+      cursorBadge.className = 'text-[11px] font-semibold text-emerald-300';
+      cursorBadge.textContent = 'ACTIVE';
     } else {
-      cursorPill.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800/80 border border-zinc-700/60 text-zinc-400';
-      cursorPill.textContent = 'Cursor: VIEW ONLY';
+      cursorBadge.className = 'text-[11px] font-semibold text-zinc-500';
+      cursorBadge.textContent = 'VIEW ONLY';
     }
+  }
+  if (cursorPill) {
+    cursorPill.classList.toggle('border-emerald-500/50', state.cursorEnabled);
+    cursorPill.classList.toggle('bg-emerald-950/60', state.cursorEnabled);
   }
 
   if (telemetry && gestureBadge) {
@@ -350,8 +365,330 @@ async function toggleCameraFeed() {
         showToast('Camera feed paused', 'info');
       }
     }
+    const badge = document.getElementById('cameraStatusBadge');
+    if (badge) badge.textContent = state.cameraActive ? 'ON' : 'OFF';
   }
 }
+
+// ==========================================
+// Floating Camera Panel (upper-right)
+// ==========================================
+function toggleCameraPanel() {
+  state.cameraExpanded = !state.cameraExpanded;
+  renderCameraPanel();
+}
+
+function renderCameraPanel() {
+  const container = document.getElementById('cameraFloat');
+  const icon = document.getElementById('cameraMinBtnIcon');
+  const feed = document.getElementById('cameraVideoFeed');
+  if (!container) return;
+
+  container.classList.toggle('collapsed', !state.cameraExpanded);
+
+  if (icon) {
+    if (state.cameraExpanded) {
+      icon.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/></svg>`;
+    } else {
+      icon.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14"/></svg>`;
+    }
+  }
+
+  if (feed && state.cameraExpanded && state.cameraActive) {
+    feed.src = '/video_feed?' + Date.now();
+  }
+}
+
+// ==========================================
+// Fullscreen Control Bar (hamburger menu)
+// ==========================================
+function openControlBar() {
+  state.controlBarOpen = true;
+  const bar = document.getElementById('controlBar');
+  if (bar) bar.classList.add('open');
+}
+
+function closeControlBar() {
+  state.controlBarOpen = false;
+  const bar = document.getElementById('controlBar');
+  if (bar) bar.classList.remove('open');
+}
+
+function toggleControlBar() {
+  if (state.controlBarOpen) closeControlBar();
+  else openControlBar();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.controlBarOpen) closeControlBar();
+});
+
+// Close control bar when backdrop is clicked
+document.addEventListener('click', (e) => {
+  const bar = document.getElementById('controlBar');
+  if (bar && state.controlBarOpen && e.target === bar) closeControlBar();
+});
+
+// ==========================================
+// Transcript Chat System
+// ==========================================
+const CHAT_STORAGE_KEY = 'voicebot_chat_v1';
+
+function loadChatFromStorage() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (raw) state.chatMessages = JSON.parse(raw);
+  } catch (e) {
+    console.warn('[Chat] Failed to load chat history:', e);
+    state.chatMessages = [];
+  }
+}
+
+function saveChatToStorage() {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state.chatMessages));
+  } catch (e) {
+    console.warn('[Chat] Failed to save chat history:', e);
+  }
+}
+
+function addToChat(role, text) {
+  state.chatMessages.push({
+    role,
+    text,
+    timestamp: Date.now(),
+    speaking: false
+  });
+  if (state.chatMessages.length > 200) {
+    state.chatMessages = state.chatMessages.slice(-200);
+  }
+  saveChatToStorage();
+  renderChat();
+  // Ensure chat panel is visible when a message arrives
+  if (!state.chatExpanded) {
+    state.chatExpanded = true;
+    renderChatPanelState();
+  }
+}
+
+function renderChat() {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+
+  const empty = state.chatMessages.length === 0;
+
+  if (empty) {
+    container.innerHTML = `
+      <div class="text-center py-6 px-4">
+        <div class="text-xs text-zinc-500">No messages yet. Say <span class="text-cyan-400 font-semibold">"Search black holes"</span> or tap the orb to begin.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = state.chatMessages.map((msg, idx) => {
+    const isUser = msg.role === 'user';
+    const speakingHtml = msg.speaking
+      ? `<span class="speaking-dots"><span></span><span></span><span></span></span>`
+      : '';
+    return `
+      <div class="flex ${isUser ? 'justify-end' : 'justify-start'} chat-entry" data-idx="${idx}">
+        <div class="chat-bubble ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}${msg.speaking ? ' speaking' : ''}">
+          ${escapeHtml(msg.text)}${speakingHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearChat() {
+  state.chatMessages = [];
+  saveChatToStorage();
+  renderChat();
+  showToast('Chat cleared', 'info');
+}
+
+function toggleChatPanel() {
+  state.chatExpanded = !state.chatExpanded;
+  renderChatPanelState();
+}
+
+function renderChatPanelState() {
+  const panel = document.getElementById('chatPanel');
+  if (panel) panel.classList.toggle('collapsed', !state.chatExpanded);
+}
+
+function expandChatInput() {
+  state.chatInputExpanded = true;
+  const bar = document.getElementById('chatInputBar');
+  if (bar) bar.classList.add('expanded');
+  const input = document.getElementById('chatInput');
+  if (input) setTimeout(() => input.focus(), 150);
+}
+
+function collapseChatInput() {
+  state.chatInputExpanded = false;
+  const bar = document.getElementById('chatInputBar');
+  if (bar) bar.classList.remove('expanded');
+}
+
+function toggleChatInput() {
+  if (state.chatInputExpanded) collapseChatInput();
+  else expandChatInput();
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  executeVoiceCommand(text, { fromTyping: true });
+}
+
+// ==========================================
+// Wake Word Listener ("Hey Sobot")
+// ==========================================
+let wakeRecognition = null;
+const WAKE_PHRASE = 'hey sobot';
+
+function startWakeWord() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Wake word not supported in this browser', 'warning');
+    return false;
+  }
+
+  if (wakeRecognition) {
+    try { wakeRecognition.stop(); } catch (e) {}
+    wakeRecognition = null;
+  }
+
+  wakeRecognition = new SpeechRecognition();
+  wakeRecognition.continuous = true;
+  wakeRecognition.interimResults = false;
+  wakeRecognition.lang = 'en-US';
+
+  wakeRecognition.onstart = () => {
+    state.wakeWordListening = true;
+    renderWakeWordUI();
+  };
+
+  wakeRecognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcript = (event.results[i][0].transcript || '').trim().toLowerCase();
+      handleWakeWordTranscript(transcript);
+    }
+  };
+
+  wakeRecognition.onerror = (event) => {
+    console.warn('[WakeWord] Error:', event.error);
+    // Auto-restart unless disabled
+    if (state.wakeWordEnabled && event.error !== 'aborted') {
+      setTimeout(() => { if (state.wakeWordEnabled) startWakeWord(); }, 300);
+    }
+  };
+
+  wakeRecognition.onend = () => {
+    if (state.wakeWordEnabled) {
+      setTimeout(() => { if (state.wakeWordEnabled) startWakeWord(); }, 200);
+    } else {
+      state.wakeWordListening = false;
+      renderWakeWordUI();
+    }
+  };
+
+  try {
+    wakeRecognition.start();
+    return true;
+  } catch (e) {
+    console.warn('[WakeWord] Start error:', e);
+    return false;
+  }
+}
+
+function handleWakeWordTranscript(transcript) {
+  // Check if the transcript contains the wake phrase
+  if (!transcript.includes(WAKE_PHRASE)) return;
+
+  // Extract command after wake phrase
+  const rest = transcript.split(WAKE_PHRASE).pop().trim();
+
+  // Signal wake word detected
+  state.wakeWordEnabled = true;
+  flashWakePill();
+  setOrbState('listening');
+
+  if (rest) {
+    executeVoiceCommand(rest, { fromWakeWord: true });
+  } else {
+    // No command given — start a one-shot capture after the wake word
+    toggleWebSpeech();
+  }
+}
+
+function flashWakePill() {
+  const pill = document.getElementById('wakePill');
+  if (pill) {
+    pill.classList.remove('hidden');
+    setTimeout(() => pill.classList.add('hidden'), 2500);
+  }
+}
+
+function toggleWakeWord() {
+  state.wakeWordEnabled = !state.wakeWordEnabled;
+  if (state.wakeWordEnabled) {
+    const ok = startWakeWord();
+    if (!ok) state.wakeWordEnabled = false;
+    showToast(ok ? 'Wake word "Hey Sobot" enabled' : 'Wake word setup failed', ok ? 'success' : 'error');
+  } else {
+    stopWakeWord();
+    showToast('Wake word disabled', 'info');
+  }
+  renderWakeWordUI();
+}
+
+function stopWakeWord() {
+  state.wakeWordListening = false;
+  if (wakeRecognition) {
+    try { wakeRecognition.stop(); } catch (e) {}
+    wakeRecognition = null;
+  }
+  renderWakeWordUI();
+}
+
+function renderWakeWordUI() {
+  const toggle = document.getElementById('wakeWordToggle');
+  const status = document.getElementById('wakeWordStatus');
+  const pill = document.getElementById('wakePill');
+
+  if (toggle) {
+    toggle.classList.toggle('border-rose-500/50', state.wakeWordEnabled);
+    toggle.classList.toggle('bg-rose-950/60', state.wakeWordEnabled);
+  }
+  if (status) {
+    status.textContent = state.wakeWordEnabled ? 'ON' : 'OFF';
+    status.className = 'text-[11px] font-semibold ' + (state.wakeWordEnabled ? 'text-rose-300' : 'text-zinc-500');
+  }
+  if (pill) {
+    if (state.wakeWordListening) pill.classList.remove('hidden');
+    else pill.classList.add('hidden');
+  }
+}
+
+// ==========================================
+// UI Voice Commands (client-side navigation)
+// ==========================================
+const UI_ACTIONS = {
+  show_camera: () => { state.cameraExpanded = true; renderCameraPanel(); return 'Camera preview shown.'; },
+  hide_camera: () => { state.cameraExpanded = false; renderCameraPanel(); return 'Camera preview hidden.'; },
+  show_chat: () => { state.chatExpanded = true; renderChatPanelState(); return 'Chat transcript shown.'; },
+  hide_chat: () => { state.chatExpanded = false; renderChatPanelState(); return 'Chat transcript hidden.'; },
+  open_settings: () => { openControlBar(); return 'Controls opened.'; },
+  close_settings: () => { closeControlBar(); return 'Controls closed.'; },
+  clear_chat: () => { clearChat(); return 'Conversation cleared.'; }
+};
 
 // ==========================================
 // Interactive Voice Assistant (Web Speech + Backend API)
@@ -461,21 +798,78 @@ async function triggerServerMicListen() {
   if (statusLabel) statusLabel.textContent = 'Tap the orb to speak';
 }
 
-async function executeVoiceCommand(text) {
+async function executeVoiceCommand(text, opts = {}) {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+
   const transcriptBox = document.getElementById('voiceTranscriptText');
   const statusLabel = document.getElementById('voiceStatusLabel');
+
+  // Add the user's message to the chat transcript
+  addToChat('user', trimmed);
+
+  // Check for client-side UI commands first
+  const uiAction = matchUIAction(trimmed);
+  if (uiAction) {
+    const message = uiAction();
+    const resp = {
+      ok: true,
+      raw_text: trimmed,
+      command_type: 'ui',
+      action: 'ui',
+      message,
+      speech: message
+    };
+    handleVoiceCommandResult(resp, { fromUIAction: true });
+    if (statusLabel) statusLabel.textContent = 'Tap the orb to speak';
+    return;
+  }
+
   if (statusLabel) statusLabel.textContent = 'Processing command...';
 
-  const res = await apiFetch('/api/voice/command', 'POST', { text });
+  const res = await apiFetch('/api/voice/command', 'POST', { text: trimmed });
   if (res) {
-    handleVoiceCommandResult(res);
+    handleVoiceCommandResult(res, opts);
   }
   if (statusLabel) statusLabel.textContent = 'Tap the orb to speak';
 }
 
-function handleVoiceCommandResult(res) {
+function matchUIAction(text) {
+  const cleaned = text.toLowerCase().trim();
+  const triggerMapping = [
+    { action: 'show_camera', words: ['show camera', 'open camera', 'start camera', 'enable camera'] },
+    { action: 'hide_camera', words: ['hide camera', 'close camera', 'stop camera', 'disable camera'] },
+    { action: 'show_chat', words: ['show chat', 'open chat', 'show transcript', 'open transcript'] },
+    { action: 'hide_chat', words: ['hide chat', 'close chat', 'hide transcript', 'close transcript'] },
+    { action: 'open_settings', words: ['open settings', 'open controls', 'show settings', 'show controls', 'open menu'] },
+    { action: 'close_settings', words: ['close settings', 'close controls', 'hide settings', 'hide controls', 'close menu'] },
+    { action: 'clear_chat', words: ['clear chat', 'clear messages', 'clear transcript', 'clear conversation'] }
+  ];
+  for (const t of triggerMapping) {
+    for (const w of t.words) {
+      if (cleaned.includes(w)) return UI_ACTIONS[t.action];
+    }
+  }
+  return null;
+}
+
+function handleVoiceCommandResult(res, opts = {}) {
   const resultBanner = document.getElementById('voiceResultBanner');
   const resultMsg = document.getElementById('voiceResultMsg');
+
+  // If the backend classified this as a UI navigation command, execute it client-side
+  if (res.command_type === 'ui' && !opts.fromUIAction) {
+    const actionFn = UI_ACTIONS[res.action];
+    if (actionFn) actionFn();
+  }
+
+  // Add assistant response to chat transcript (full LLM response for searches)
+  const responseText = res.search_result && res.search_result.response
+    ? res.search_result.response
+    : (res.speech || res.message);
+  if (responseText) {
+    addToChat('assistant', responseText);
+  }
 
   if (resultBanner && resultMsg) {
     resultMsg.textContent = res.message || res.speech;
@@ -483,28 +877,25 @@ function handleVoiceCommandResult(res) {
     setTimeout(() => resultBanner.classList.add('hidden'), 5000);
   }
 
-  // If search was executed, populate search response
-  if (res.search_result && res.search_result.response) {
-    displaySearchResponse(res.search_result.query, res.search_result.response, res.search_result.source);
-  }
-
-  // Voice synthesis feedback if available
-  if (res.speech && 'speechSynthesis' in window) {
-    speakText(res.speech);
+  // Voice synthesis feedback: speak the same text that was added to the transcript
+  const speechToRead = res.search_result && res.search_result.response
+    ? res.search_result.response
+    : (res.speech || '');
+  if (speechToRead && 'speechSynthesis' in window) {
+    speakText(speechToRead, { chatMark: true });
   } else {
     flashOrbSuccess();
   }
 
-  // Refresh system sliders
+  // Refresh system sliders & logs
   refreshStatus();
   refreshLogs();
 }
 
-function speakText(text) {
+function speakText(text, opts = {}) {
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    // Select a natural human-sounding voice if available
     const voices = window.speechSynthesis.getVoices();
     if (voices && voices.length) {
       const preferred = pickNaturalVoice(voices);
@@ -512,13 +903,45 @@ function speakText(text) {
     }
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
-    utterance.onend = () => setOrbState('success');
-    utterance.onerror = () => setOrbState('idle');
+
+    // Mark the last assistant chat message as "speaking" while TTS runs
+    const msgId = markChatSpeaking(opts.chatMark !== false);
+    utterance.onstart = () => setOrbState('speaking');
+    utterance.onend = () => {
+      if (msgId != null) unmarkChatSpeaking(msgId);
+      setOrbState('success');
+      setTimeout(() => setOrbState('idle'), 800);
+    };
+    utterance.onerror = () => {
+      if (msgId != null) unmarkChatSpeaking(msgId);
+      setOrbState('idle');
+    };
     window.speechSynthesis.speak(utterance);
     setOrbState('speaking');
   } catch (err) {
     console.warn('Speech synthesis error:', err);
     setOrbState('success');
+    setTimeout(() => setOrbState('idle'), 800);
+  }
+}
+
+function markChatSpeaking(enabled) {
+  if (!enabled) return null;
+  // Find last assistant message index
+  for (let i = state.chatMessages.length - 1; i >= 0; i--) {
+    if (state.chatMessages[i].role === 'assistant' && !state.chatMessages[i].speaking) {
+      state.chatMessages[i].speaking = true;
+      renderChat();
+      return i;
+    }
+  }
+  return null;
+}
+
+function unmarkChatSpeaking(idx) {
+  if (idx != null && state.chatMessages[idx]) {
+    state.chatMessages[idx].speaking = false;
+    renderChat();
   }
 }
 
@@ -647,14 +1070,19 @@ async function desktopAction(action, payload = {}) {
 
 function renderVoiceStateUI() {
   const serverMicPill = document.getElementById('serverVoiceStatusPill');
-  if (serverMicPill) {
+  const serverMicBadge = document.getElementById('serverMicStatusBadge');
+  if (serverMicBadge) {
     if (state.voiceListening) {
-      serverMicPill.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300';
-      serverMicPill.textContent = 'Server Mic: LISTENING';
+      serverMicBadge.className = 'text-[11px] font-semibold text-emerald-300';
+      serverMicBadge.textContent = 'LISTENING';
     } else {
-      serverMicPill.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-800/80 border border-zinc-700/60 text-zinc-400';
-      serverMicPill.textContent = 'Server Mic: IDLE';
+      serverMicBadge.className = 'text-[11px] font-semibold text-zinc-500';
+      serverMicBadge.textContent = 'IDLE';
     }
+  }
+  if (serverMicPill) {
+    serverMicPill.classList.toggle('border-emerald-500/50', state.voiceListening);
+    serverMicPill.classList.toggle('bg-emerald-950/60', state.voiceListening);
   }
 }
 
@@ -672,81 +1100,9 @@ async function toggleServerVoiceListener() {
 
 // ==========================================
 // Gemini Search & Intelligence
+// (Search is now driven through voice commands and the chat transcript.
+//  This section coordinates a direct programmatic search call.)
 // ==========================================
-async function doGeminiSearch(customQuery = null) {
-  const input = document.getElementById('searchInput');
-  const query = (customQuery || (input ? input.value : '')).trim();
-  if (!query) return;
-
-  const searchBtn = document.getElementById('searchSubmitBtn');
-  const spinner = document.getElementById('searchSpinner');
-  const btnText = document.getElementById('searchBtnText');
-
-  if (searchBtn) searchBtn.disabled = true;
-  if (spinner) spinner.classList.remove('hidden');
-  if (btnText) btnText.textContent = 'Thinking...';
-
-  const res = await apiFetch('/api/search', 'POST', { query });
-
-  if (searchBtn) searchBtn.disabled = false;
-  if (spinner) spinner.classList.add('hidden');
-  if (btnText) btnText.textContent = 'Search';
-
-  if (res && res.ok && res.result) {
-    displaySearchResponse(res.result.query, res.result.response, res.result.source);
-    loadSearchHistory();
-  } else {
-    displaySearchResponse(query, res?.error || 'Failed to retrieve response', 'error');
-  }
-
-  if (input && !customQuery) input.value = '';
-}
-
-function displaySearchResponse(query, responseText, source) {
-  const container = document.getElementById('searchResponseCard');
-  const queryElem = document.getElementById('searchResponseQuery');
-  const textElem = document.getElementById('searchResponseText');
-  const sourceBadge = document.getElementById('searchResponseSource');
-
-  if (container) container.classList.remove('hidden');
-  if (queryElem) queryElem.textContent = `"${query}"`;
-  if (textElem) textElem.textContent = responseText;
-  if (sourceBadge) {
-    sourceBadge.textContent = source || 'Gemini';
-  }
-}
-
-function copySearchResponse() {
-  const textElem = document.getElementById('searchResponseText');
-  if (!textElem) return;
-  navigator.clipboard.writeText(textElem.textContent).then(() => {
-    showToast('Response copied to clipboard', 'success');
-  });
-}
-
-function speakSearchResponse() {
-  const textElem = document.getElementById('searchResponseText');
-  if (!textElem) return;
-  speakText(textElem.textContent.slice(0, 300));
-}
-
-async function loadSearchHistory() {
-  const res = await apiFetch('/api/search/history');
-  const container = document.getElementById('searchHistoryChips');
-  if (!container || !res || !res.results) return;
-
-  if (res.results.length === 0) {
-    container.innerHTML = `<span class="text-xs text-zinc-500">No recent queries</span>`;
-    return;
-  }
-
-  container.innerHTML = res.results.slice(0, 6).map(item => `
-    <button onclick="doGeminiSearch('${escapeHtml(item.query).replace(/'/g, "\\'")}')" 
-      class="px-2.5 py-1 rounded-full text-xs bg-zinc-800/90 border border-zinc-700/60 text-zinc-300 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors truncate max-w-[200px]">
-      ${escapeHtml(item.query)}
-    </button>
-  `).join('');
-}
 
 // ==========================================
 // Activity & System Logs
@@ -790,9 +1146,12 @@ async function clearLogs() {
 document.addEventListener('DOMContentLoaded', () => {
   initPWA();
   initWebSpeech();
+  loadChatFromStorage();
+  renderChat();
+  renderChatPanelState();
+  renderCameraPanel();
   refreshStatus();
   refreshLogs();
-  loadSearchHistory();
 
   // Initialize orb to idle and preload available TTS voices
   setOrbState('idle');
@@ -812,11 +1171,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Search enter key listener
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') doGeminiSearch();
+  // Chat input Enter key listener
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendChatMessage();
     });
   }
 

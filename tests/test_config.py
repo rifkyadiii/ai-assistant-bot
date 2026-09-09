@@ -6,6 +6,7 @@ from config.settings import (
     SERVER_PORT,
     VOLUME_STEP,
     BRIGHTNESS_STEP,
+    WAKE_PHRASE,
     HAND_LANDMARKER_MODEL_PATH,
 )
 
@@ -27,6 +28,18 @@ def test_commands_structure():
         "cursor_toggle",
     ]
     for key in expected_keys:
+        assert key in COMMANDS
+        assert isinstance(COMMANDS[key], list)
+        assert len(COMMANDS[key]) > 0
+
+
+def test_wake_phrase_exists():
+    assert WAKE_PHRASE
+    assert "sobot" in WAKE_PHRASE
+
+
+def test_ui_command_categories():
+    for key in ["camera_show", "camera_hide", "chat_show", "chat_hide", "open_settings", "close_settings", "clear_chat"]:
         assert key in COMMANDS
         assert isinstance(COMMANDS[key], list)
         assert len(COMMANDS[key]) > 0

@@ -327,6 +327,29 @@ class VoiceService:
                 self._notify_listeners(res)
                 return res
 
+        # 9.75 Interface Navigation Commands (UI actions handled client-side)
+        ui_commands = [
+            ("show_camera", COMMANDS.get("camera_show", []), "Showing camera preview."),
+            ("hide_camera", COMMANDS.get("camera_hide", []), "Hiding camera preview."),
+            ("show_chat", COMMANDS.get("chat_show", []), "Showing chat transcript."),
+            ("hide_chat", COMMANDS.get("chat_hide", []), "Hiding chat transcript."),
+            ("open_settings", COMMANDS.get("open_settings", []), "Opening controls."),
+            ("close_settings", COMMANDS.get("close_settings", []), "Closing controls."),
+            ("clear_chat", COMMANDS.get("clear_chat", []), "Cleared the conversation."),
+        ]
+        for action, phrases, speech_msg in ui_commands:
+            if phrases and _has_phrase(cleaned, phrases):
+                res = {
+                    "ok": True,
+                    "raw_text": raw,
+                    "command_type": "ui",
+                    "action": action,
+                    "message": speech_msg,
+                    "speech": speech_msg,
+                }
+                self._notify_listeners(res)
+                return res
+
         # 10. Search Trigger
         query = self.extract_search_query(cleaned)
         if query:
