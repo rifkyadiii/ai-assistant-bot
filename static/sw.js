@@ -4,7 +4,7 @@
  * ensuring real-time APIs and video feeds bypass cache.
  */
 
-const CACHE_NAME = 'voicebot-shell-v3';
+const CACHE_NAME = 'voicebot-shell-v4';
 
 const STATIC_SHELL_ASSETS = [
   '/',

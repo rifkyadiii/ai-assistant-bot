@@ -81,153 +81,120 @@ input[type="range"].range-slider::-moz-range-thumb {
   will-change: transform;
 }
 
-.orb-core {
+/* ==========================================
+   Chibi Companion — animated SVG character
+   (replaces the fluid orb; state classes on
+   #orbContainer drive all expressions)
+   ========================================== */
+
+.waifu {
   position: relative;
-  width: 168px;
-  height: 168px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.5), rgba(14, 116, 144, 0.4), rgba(6, 182, 212, 0.2));
-  box-shadow:
-    0 0 40px 8px rgba(6, 182, 212, 0.25),
-    0 0 80px 16px rgba(6, 182, 212, 0.1),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 4px 16px rgba(255, 255, 255, 0.08);
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 250px;
+  height: 250px;
+  overflow: visible;
   z-index: 3;
 }
 
-.orb-core::before {
-  content: '';
-  position: absolute;
-  top: 12%;
-  left: 22%;
-  width: 35%;
-  height: 25%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.35), transparent);
-  filter: blur(4px);
-  z-index: 4;
+/* Soft glow aura behind the character — recolors per state */
+.waifu-aura {
+  fill: rgba(34, 211, 238, 0.3);
+  filter: blur(24px);
+  opacity: 0.55;
+  transition: fill 0.5s ease;
+  animation: waifu-aura-breathe 4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-/* Orb state: listening */
-.orb-listening .orb-core {
-  background: radial-gradient(circle at 35% 35%, rgba(239, 68, 68, 0.6), rgba(190, 18, 60, 0.5), rgba(225, 29, 72, 0.25));
-  box-shadow:
-    0 0 60px 16px rgba(239, 68, 68, 0.35),
-    0 0 120px 32px rgba(239, 68, 68, 0.15),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 4px 16px rgba(255, 255, 255, 0.1);
-  animation: orb-pulse-listen 1.2s ease-in-out infinite;
+.waifu-char {
+  transform-box: fill-box;
+  transform-origin: 50% 85%;
+  transition: transform 0.4s ease;
 }
 
-/* Orb state: processing */
-.orb-processing .orb-core {
-  background: radial-gradient(circle at 35% 35%, rgba(245, 158, 11, 0.6), rgba(217, 119, 6, 0.5), rgba(245, 158, 11, 0.25));
-  box-shadow:
-    0 0 60px 16px rgba(245, 158, 11, 0.35),
-    0 0 120px 32px rgba(245, 158, 11, 0.15),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 4px 16px rgba(255, 255, 255, 0.1);
-  animation: orb-pulse-process 0.8s ease-in-out infinite;
+.waifu .hair-back { fill: #7c3aed; }
+.waifu .hair-front, .waifu .ahoge { fill: #a78bfa; }
+.waifu .face { fill: #ffe8d6; }
+.waifu .eye ellipse { fill: #45283f; }
+.waifu .eye .shine { fill: #ffffff; }
+
+.eyes {
+  transform-box: fill-box;
+  transition: transform 0.3s ease;
 }
 
-/* Orb state: speaking */
-.orb-speaking .orb-core {
-  background: radial-gradient(circle at 35% 35%, rgba(168, 85, 247, 0.6), rgba(139, 92, 246, 0.5), rgba(147, 51, 234, 0.25));
-  box-shadow:
-    0 0 60px 16px rgba(168, 85, 247, 0.35),
-    0 0 120px 32px rgba(168, 85, 247, 0.15),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 4px 16px rgba(255, 255, 255, 0.1);
-  animation: orb-pulse-speak 0.6s ease-in-out infinite;
+.eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: waifu-blink 4.4s ease-in-out infinite;
+  transition: opacity 0.15s ease;
 }
 
-/* Orb state: success */
-.orb-success .orb-core {
-  background: radial-gradient(circle at 35% 35%, rgba(34, 197, 94, 0.6), rgba(22, 163, 74, 0.5), rgba(34, 197, 94, 0.25));
-  box-shadow:
-    0 0 60px 16px rgba(34, 197, 94, 0.35),
-    0 0 120px 32px rgba(34, 197, 94, 0.15),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 4px 16px rgba(255, 255, 255, 0.1);
+.eye-happy, .eye-angry {
+  fill: none;
+  stroke: #45283f;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
-/* Orb state: error */
-.orb-error .orb-core {
-  background: radial-gradient(circle at 35% 35%, rgba(239, 68, 68, 0.65), rgba(185, 28, 28, 0.55), rgba(127, 29, 29, 0.3));
-  box-shadow:
-    0 0 60px 16px rgba(239, 68, 68, 0.45),
-    0 0 120px 32px rgba(239, 68, 68, 0.2),
-    inset 0 -8px 24px rgba(0, 0, 0, 0.45),
-    inset 0 4px 16px rgba(255, 255, 255, 0.08);
-  animation: orb-pulse-error 1.1s ease-in-out infinite;
+.mouth-smile, .mouth-talk, .mouth-sad {
+  transition: opacity 0.15s ease;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-/* Orb ring layers */
-.orb-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(6, 182, 212, 0.12);
-  z-index: 2;
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+.mouth-smile { fill: none; stroke: #c2607c; stroke-width: 3; stroke-linecap: round; }
+.mouth-talk { fill: #c2607c; opacity: 0; }
+.mouth-sad { fill: none; stroke: #c2607c; stroke-width: 3; stroke-linecap: round; opacity: 0; }
+
+.blush {
+  fill: #fb7185;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
 }
 
-.orb-ring-1 {
-  width: 216px;
-  height: 216px;
-  animation: orb-orbit-1 8s linear infinite;
-  border-color: rgba(6, 182, 212, 0.15);
+.sparkle {
+  fill: #fef08a;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.orb-ring-2 {
-  width: 264px;
-  height: 264px;
-  animation: orb-orbit-2 12s linear infinite;
-  border-color: rgba(6, 182, 212, 0.1);
-}
+/* State: listening — lean in, blush harder, red aura */
+.orb-listening .waifu-aura { fill: rgba(239, 68, 68, 0.35); }
+.orb-listening .waifu-char { transform: rotate(-5deg); }
+.orb-listening .blush { opacity: 0.55; }
 
-.orb-ring-3 {
-  width: 312px;
-  height: 312px;
-  animation: orb-orbit-3 16s linear infinite;
-  border-color: rgba(6, 182, 212, 0.06);
-}
+/* State: processing — glance up-left, sway, amber aura */
+.orb-processing .waifu-aura { fill: rgba(245, 158, 11, 0.35); }
+.orb-processing .eyes { transform: translate(-3px, -3px); }
+.orb-processing .waifu-char { animation: waifu-sway 1.6s ease-in-out infinite; }
 
-/* Orb state: listening — rings glow red */
-.orb-listening .orb-ring-1 { border-color: rgba(239, 68, 68, 0.2); animation-duration: 4s; }
-.orb-listening .orb-ring-2 { border-color: rgba(239, 68, 68, 0.15); animation-duration: 6s; }
-.orb-listening .orb-ring-3 { border-color: rgba(239, 68, 68, 0.1); animation-duration: 8s; }
+/* State: speaking — mouth flaps, violet aura */
+.orb-speaking .waifu-aura { fill: rgba(168, 85, 247, 0.35); }
+.orb-speaking .mouth-smile { opacity: 0; }
+.orb-speaking .mouth-talk { opacity: 1; animation: waifu-talk 0.28s ease-in-out infinite; }
 
-/* Orb state: processing — rings glow amber */
-.orb-processing .orb-ring-1 { border-color: rgba(245, 158, 11, 0.2); animation-duration: 3s; }
-.orb-processing .orb-ring-2 { border-color: rgba(245, 158, 11, 0.15); animation-duration: 4.5s; }
-.orb-processing .orb-ring-3 { border-color: rgba(245, 158, 11, 0.1); animation-duration: 6s; }
+/* State: success — happy eyes, sparkle burst, green aura */
+.orb-success .waifu-aura { fill: rgba(34, 197, 94, 0.35); }
+.orb-success .eye { opacity: 0; animation: none; }
+.orb-success .eye-happy { opacity: 1; }
+.orb-success .mouth-smile { transform: scale(1.35); }
+.orb-success .waifu-char { animation: waifu-bounce 0.7s ease; }
+.orb-success .sparkle { animation: waifu-twinkle 0.7s ease-out forwards; }
+.orb-success .sparkle-2 { animation-delay: 0.1s; }
+.orb-success .sparkle-3 { animation-delay: 0.2s; }
 
-/* Orb state: speaking — rings glow purple */
-.orb-speaking .orb-ring-1 { border-color: rgba(168, 85, 247, 0.2); animation-duration: 3.5s; }
-.orb-speaking .orb-ring-2 { border-color: rgba(168, 85, 247, 0.15); animation-duration: 5s; }
-.orb-speaking .orb-ring-3 { border-color: rgba(168, 85, 247, 0.1); animation-duration: 7s; }
-
-/* Orb state: error — rings glow red */
-.orb-error .orb-ring-1 { border-color: rgba(239, 68, 68, 0.25); animation-duration: 2.5s; }
-.orb-error .orb-ring-2 { border-color: rgba(239, 68, 68, 0.15); animation-duration: 3.5s; }
-.orb-error .orb-ring-3 { border-color: rgba(239, 68, 68, 0.08); animation-duration: 5s; }
-
-/* Orb floating particles */
-.orb-particle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(6, 182, 212, 0.5);
-  z-index: 1;
-  animation: orb-float-particle 4s ease-in-out infinite;
-}
-
-.orb-listening .orb-particle { background: rgba(239, 68, 68, 0.6); }
-.orb-processing .orb-particle { background: rgba(245, 158, 11, 0.6); }
-.orb-speaking .orb-particle { background: rgba(168, 85, 247, 0.6); }
-.orb-error .orb-particle { background: rgba(239, 68, 68, 0.7); }
+/* State: error — >_< eyes, wavy mouth, shake, red aura */
+.orb-error .waifu-aura { fill: rgba(239, 68, 68, 0.4); }
+.orb-error .eye { opacity: 0; animation: none; }
+.orb-error .eye-angry { opacity: 1; }
+.orb-error .mouth-smile { opacity: 0; }
+.orb-error .mouth-sad { opacity: 1; }
+.orb-error .waifu-char { animation: waifu-shake 0.5s ease-in-out; }
 
 /* Orb waveform canvas */
 .orb-waveform {
@@ -273,61 +240,54 @@ input[type="range"].range-slider::-moz-range-thumb {
   white-space: nowrap;
 }
 
-/* Orb inner glow pulse */
-.orb-glow-inner {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.15), transparent 70%);
-  animation: orb-inner-glow 3s ease-in-out infinite;
-  z-index: 2;
-}
-
-.orb-listening .orb-glow-inner {
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.15), transparent 70%);
-  animation-duration: 1.5s;
-}
-
-.orb-processing .orb-glow-inner {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15), transparent 70%);
-  animation-duration: 1s;
-}
-
-.orb-speaking .orb-glow-inner {
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 70%);
-  animation-duration: 1.2s;
-}
-
-.orb-error .orb-glow-inner {
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.2), transparent 70%);
-  animation-duration: 0.9s;
-}
-
 /* ==========================================
    Orb Keyframe Animations
    ========================================== */
 
-@keyframes orb-pulse-listen {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+/* ==========================================
+   Chibi Companion Keyframes
+   ========================================== */
+
+@keyframes waifu-blink {
+  0%, 91%, 100% { transform: scaleY(1); }
+  94%, 97% { transform: scaleY(0.08); }
 }
 
-@keyframes orb-pulse-process {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.04) rotate(2deg); }
-  75% { transform: scale(0.97) rotate(-2deg); }
+@keyframes waifu-talk {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
 }
 
-@keyframes orb-pulse-speak {
-  0%, 100% { transform: scale(1); }
-  30% { transform: scale(1.06); }
-  60% { transform: scale(0.97); }
+@keyframes waifu-bounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08) translateY(-8px); }
+  70% { transform: scale(0.98) translateY(0); }
+  100% { transform: scale(1); }
 }
 
-@keyframes orb-pulse-error {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.09); }
+@keyframes waifu-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes waifu-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes waifu-aura-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes waifu-twinkle {
+  0% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  40% { opacity: 1; transform: scale(1.2) rotate(20deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(40deg); }
 }
 
 /* Gentle idle "breathing" float for ambient presence */
@@ -336,36 +296,9 @@ input[type="range"].range-slider::-moz-range-thumb {
   50% { transform: translateY(-8px) scale(1.015); }
 }
 
-@keyframes orb-orbit-1 {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes orb-orbit-2 {
-  0% { transform: rotate(120deg); }
-  100% { transform: rotate(480deg); }
-}
-
-@keyframes orb-orbit-3 {
-  0% { transform: rotate(240deg); }
-  100% { transform: rotate(600deg); }
-}
-
 @keyframes orb-ripple-expand {
   0% { width: 140px; height: 140px; opacity: 1; }
   100% { width: 300px; height: 300px; opacity: 0; }
-}
-
-@keyframes orb-inner-glow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-@keyframes orb-float-particle {
-  0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
-  25% { transform: translateY(-12px) translateX(8px) scale(1.3); opacity: 1; }
-  50% { transform: translateY(-4px) translateX(-6px) scale(0.9); opacity: 0.4; }
-  75% { transform: translateY(-16px) translateX(4px) scale(1.1); opacity: 0.8; }
 }
 
 /* Voice Ripple for mic button (legacy compat) */
@@ -636,10 +569,8 @@ input[type="range"].range-slider::-moz-range-thumb {
    ========================================== */
 
 /* Pause decorative animation when the tab is hidden (CPU/GPU savings) */
-.anim-paused .orb-ring,
-.anim-paused .orb-glow-inner,
-.anim-paused .orb-particle,
-.anim-paused .orb-core,
+.anim-paused .waifu-char,
+.anim-paused .waifu-aura,
 .anim-paused .wake-indicator.active {
   animation-play-state: paused !important;
 }
@@ -647,10 +578,9 @@ input[type="range"].range-slider::-moz-range-thumb {
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .orb-container,
-  .orb-ring,
-  .orb-glow-inner,
-  .orb-particle,
-  .orb-core,
+  .waifu-char,
+  .waifu-aura,
+  .eye,
   .speaking-dots span,
   .wake-indicator.active {
     animation: none !important;
@@ -665,13 +595,10 @@ input[type="range"].range-slider::-moz-range-thumb {
     width: 240px;
     height: 240px;
   }
-  .orb-core {
-    width: 120px;
-    height: 120px;
+  .waifu {
+    width: 180px;
+    height: 180px;
   }
-  .orb-ring-1 { width: 160px; height: 160px; }
-  .orb-ring-2 { width: 192px; height: 192px; }
-  .orb-ring-3 { width: 224px; height: 224px; }
   .orb-waveform { width: 180px; height: 36px; }
   .camera-float .camera-frame {
     width: 200px;

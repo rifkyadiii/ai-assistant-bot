@@ -89,20 +89,44 @@
       <span id="connectionText">System Online</span>
     </div>
 
-    <!-- Fluid Orb Centerpiece -->
+    <!-- Animated Chibi Companion (replaces fluid orb) -->
     <div id="orbContainer" class="orb-container" role="button" tabindex="0"
          onclick="toggleOrbInteraction()" aria-label="Tap to speak to VoiceBot">
-      <div class="orb-ring orb-ring-1"></div>
-      <div class="orb-ring orb-ring-2"></div>
-      <div class="orb-ring orb-ring-3"></div>
-      <div class="orb-glow-inner"></div>
-      <div class="orb-particle" style="top:18%;left:70%"></div>
-      <div class="orb-particle" style="top:75%;left:22%"></div>
-      <div class="orb-particle" style="top:30%;left:12%"></div>
-      <div class="orb-particle" style="top:80%;left:78%"></div>
-      <div class="orb-particle" style="top:12%;left:42%"></div>
-      <div class="orb-particle" style="top:60%;left:88%"></div>
-      <div class="orb-core"></div>
+      <svg class="waifu" viewBox="0 0 200 200" aria-hidden="true">
+        <ellipse class="waifu-aura" cx="100" cy="100" rx="92" ry="92"/>
+        <g class="waifu-char">
+          <path class="hair-back" d="M100 20 C 46 20 28 64 31 110 C 33 136 42 156 54 166 L 146 166 C 158 156 167 136 169 110 C 172 64 154 20 100 20 Z"/>
+          <path class="ahoge" d="M100 24 C 88 8 110 -2 126 6 C 108 8 102 16 106 27 Z"/>
+          <path class="face" d="M100 48 C 68 48 52 72 54 102 C 56 132 76 154 100 154 C 124 154 144 132 146 102 C 148 72 132 48 100 48 Z"/>
+          <ellipse class="blush" cx="61" cy="121" rx="9" ry="4.5"/>
+          <ellipse class="blush" cx="139" cy="121" rx="9" ry="4.5"/>
+          <g class="eyes">
+            <g class="eye">
+              <ellipse cx="76" cy="103" rx="8.5" ry="12"/>
+              <circle class="shine" cx="73" cy="97" r="3"/>
+              <circle class="shine" cx="79" cy="108" r="1.5"/>
+            </g>
+            <g class="eye">
+              <ellipse cx="124" cy="103" rx="8.5" ry="12"/>
+              <circle class="shine" cx="121" cy="97" r="3"/>
+              <circle class="shine" cx="127" cy="108" r="1.5"/>
+            </g>
+            <path class="eye-happy" d="M67 105 Q 76 93 85 105"/>
+            <path class="eye-happy" d="M115 105 Q 124 93 133 105"/>
+            <path class="eye-angry" d="M67 96 L 85 103 L 67 110"/>
+            <path class="eye-angry" d="M133 96 L 115 103 L 133 110"/>
+          </g>
+          <path class="mouth-smile" d="M92 133 Q 100 140 108 133"/>
+          <ellipse class="mouth-talk" cx="100" cy="135" rx="6" ry="5"/>
+          <path class="mouth-sad" d="M93 137 Q 100 130 107 137"/>
+          <path class="hair-front" d="M100 38 C 60 38 46 70 49 102 C 60 80 71 74 79 77 C 84 60 92 55 100 55 C 108 55 116 60 121 77 C 129 74 140 80 151 102 C 154 70 140 38 100 38 Z"/>
+          <g class="sparkles">
+            <path class="sparkle sparkle-1" d="M0 -7 L 2 -2 L 7 0 L 2 2 L 0 7 L -2 2 L -7 0 L -2 -2 Z" transform="translate(34,56)"/>
+            <path class="sparkle sparkle-2" d="M0 -5 L 1.5 -1.5 L 5 0 L 1.5 1.5 L 0 5 L -1.5 1.5 L -5 0 L -1.5 -1.5 Z" transform="translate(166,44)"/>
+            <path class="sparkle sparkle-3" d="M0 -6 L 1.8 -1.8 L 6 0 L 1.8 1.8 L 0 6 L -1.8 1.8 L -6 0 L -1.8 -1.8 Z" transform="translate(172,118)"/>
+          </g>
+        </g>
+      </svg>
       <canvas id="orbWaveform" class="orb-waveform" width="200" height="40"></canvas>
       <div class="orb-status text-xs font-semibold tracking-widest uppercase">
         <span id="orbStatusText" class="text-zinc-400">Ready</span>
