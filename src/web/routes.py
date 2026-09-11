@@ -20,6 +20,7 @@ from config.settings import (
     BASE_DIR,
     COMMANDS,
     SERVER_PORT,
+    VOICE_LANGUAGE,
     STATUS_POLL_INTERVAL,
     LOGS_POLL_INTERVAL,
     TTS_ENABLED,
@@ -99,6 +100,7 @@ def api_config():
     return jsonify({
         "ok": True,
         "wake_phrase": WAKE_PHRASE,
+        "voice_language": VOICE_LANGUAGE,
         "tts_enabled": TTS_ENABLED,
         "tts_voice": TTS_VOICE,
         "tts_rate": TTS_RATE,

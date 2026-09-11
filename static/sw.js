@@ -4,7 +4,7 @@
  * ensuring real-time APIs and video feeds bypass cache.
  */
 
-const CACHE_NAME = 'voicebot-shell-v2';
+const CACHE_NAME = 'voicebot-shell-v3';
 
 const STATIC_SHELL_ASSETS = [
   '/',
@@ -43,6 +43,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // 0. Only handle http(s) — skip chrome-extension:// and other schemes
+  if (!url.protocol.startsWith('http')) return;
 
   // 1. NEVER cache live video feed or REST API endpoints
   if (url.pathname.startsWith('/api/') || url.pathname === '/video_feed') {

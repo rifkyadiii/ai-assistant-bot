@@ -630,7 +630,7 @@ function startWakeWord() {
   wakeRecognition = new SpeechRecognition();
   wakeRecognition.continuous = true;
   wakeRecognition.interimResults = false;
-  wakeRecognition.lang = 'en-US';
+  wakeRecognition.lang = state.config?.voice_language || 'en-US';
 
   wakeRecognition.onstart = () => {
     state.wakeWordListening = true;
@@ -655,13 +655,15 @@ function startWakeWord() {
       return;
     }
     // Auto-restart unless disabled (network / no-speech are transient)
-    if (state.wakeWordEnabled && event.error !== 'aborted') {
-      setTimeout(() => { if (state.wakeWordEnabled && !document.hidden) startWakeWord(); }, 300);
+    // Never restart while the main mic capture is active — Chrome aborts one
+    // recognizer when another starts, so the two would keep killing each other
+    if (state.wakeWordEnabled && event.error !== 'aborted' && !state.isRecordingWebSpeech) {
+      setTimeout(() => { if (state.wakeWordEnabled && !state.isRecordingWebSpeech && !document.hidden) startWakeWord(); }, 300);
     }
   };
 
   wakeRecognition.onend = () => {
-    if (state.wakeWordEnabled) {
+    if (state.wakeWordEnabled && !state.isRecordingWebSpeech) {
       // Browsers can stop the engine; transparently resume unless the tab is hidden
       setTimeout(() => {
         if (state.wakeWordEnabled && !document.hidden) startWakeWord();
@@ -849,7 +851,7 @@ function initWebSpeech() {
   speechRecognition = new SpeechRecognition();
   speechRecognition.continuous = false;
   speechRecognition.interimResults = true;
-  speechRecognition.lang = 'en-US';
+  speechRecognition.lang = state.config?.voice_language || 'en-US';
 
   const transcriptBox = document.getElementById('voiceTranscriptText');
   const statusLabel = document.getElementById('voiceStatusLabel');
@@ -891,6 +893,10 @@ function initWebSpeech() {
 
   speechRecognition.onend = () => {
     stopWebSpeech();
+    // Resume wake word now that the mic capture is done
+    if (state.wakeWordEnabled && !document.hidden) {
+      setTimeout(() => { if (state.wakeWordEnabled && !state.isRecordingWebSpeech && !document.hidden) startWakeWord(); }, 200);
+    }
   };
 }
 
@@ -1119,6 +1125,7 @@ async function loadServerConfig() {
     if (!res.ok) throw new Error('Config load failed');
     const data = await res.json();
     state.config = data;
+    if (speechRecognition) speechRecognition.lang = data.voice_language || 'en-US';
     if (data.tts_enabled === false || data.tts_engine) {
       // Reflect backend TTS availability in state
       state.backendTtsAvailable = data.tts_enabled !== false;
